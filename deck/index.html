@@ -47,6 +47,15 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
 @keyframes up{to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.slide .up,.slide.on .up{opacity:1;transform:none;animation:none}.marquee .track{animation:none!important}}
 
+/* extra imagery */
+.fan{display:flex;justify-content:center;margin-top:26px}
+.fan img{width:31%;border-radius:10px;box-shadow:0 12px 26px rgba(43,26,28,.35);margin:0 -3%}
+.fan img:nth-child(1){transform:rotate(-8deg) translateY(10px)}
+.fan img:nth-child(2){transform:translateY(-6px);z-index:1}
+.fan img:nth-child(3){transform:rotate(8deg) translateY(10px)}
+.side{position:absolute;right:18px;width:30%;border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.4);transform:rotate(6deg)}
+.banner{display:block;width:calc(100% + 52px);margin:0 -26px 16px;height:170px;object-fit:cover}
+.peek{position:absolute;pointer-events:none;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
 /* 1 cover */
 .s1{background:var(--plum)}
 .s1 .story{position:absolute;width:42%;border-radius:14px;box-shadow:0 20px 40px rgba(0,0,0,.45)}
@@ -105,7 +114,7 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
 /* 7 numbers */
 .s7{background:var(--sky);color:var(--plum)}
 .nums{display:flex;flex-direction:column;gap:18px;margin-top:22px}
-.nums div{border-bottom:2px solid var(--plum);padding-bottom:10px}
+.nums div{border-bottom:2px solid var(--plum);padding-bottom:10px;margin-right:36%}
 .nums b{font-family:var(--display);font-weight:400;font-size:72px;line-height:.95;font-variant-numeric:tabular-nums}
 .nums span{display:block;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
 
@@ -143,13 +152,15 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
 
   <section class="slide s2" data-light>
     <p class="kick up" style="--d:0">The idea</p>
-    <h2 class="anton up" style="--d:1;margin-top:14px">Seseh already runs.</h2>
-    <h2 class="anton up" style="--d:3;margin-top:18px"><span style="background:var(--plum);color:var(--sky);padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.25">Let's put Flatto on every run.</span></h2>
-    <p class="lead up" style="--d:5;margin-top:22px">Every run becomes a story. Every story shows Flatto to the runner's friends.</p>
+    <h2 class="anton up" style="--d:1;margin-top:14px">Your crew already posts.</h2>
+    <h2 class="anton up" style="--d:3;margin-top:18px"><span style="background:var(--plum);color:var(--sky);padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.25">Let's make every post a Flatto post.</span></h2>
+    <p class="lead up" style="--d:5;margin-top:22px">More stories, and every one carries the logo, the mascot and @flatto.bali.</p>
+    <div class="fan up" style="--d:6"><img src="img/c-polaroid.jpg" alt=""><img src="img/stamp.jpg" alt=""><img src="img/tee.jpg" alt=""></div>
   </section>
 
   <section class="slide s3">
     <p class="kick up" style="--d:0">How it works</p>
+    <img class="side up" style="--d:2;top:70px;width:25%" src="img/polaroid.jpg" alt="">
     <h2 class="anton up" style="--d:1;font-size:54px;margin-top:10px">Scan. Run.<br>Post.</h2>
     <div class="steps">
       <div class="step up" style="--d:2"><b>1</b><div><h3>Scan at the counter</h3><p>A QR on the counter opens the page. No app to install.</p></div></div>
@@ -169,6 +180,7 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
   </section>
 
   <section class="slide s5">
+    <img class="banner up" style="--d:0;height:130px" src="img/photo-mirror.jpg" alt="Flatto mirror logo">
     <p class="kick up" style="--d:0">For everyone</p>
     <h2 class="anton up" style="--d:1;font-size:50px;margin-top:10px">Not a runner?<br>Still posting.</h2>
     <div class="duo">
@@ -179,6 +191,7 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
 
   <section class="slide s6">
     <p class="kick up" style="--d:0">Leaderboard</p>
+    <img class="peek up" style="--d:2;right:-30px;top:78px;width:56%" src="img/mascot.webp" alt="">
     <h2 class="anton up" style="--d:1;font-size:46px;margin-top:10px">The Flatto board.</h2>
     <p class="lead up" style="--d:2;margin-top:6px;font-size:14px">Ranked by distance, not speed. Every story adds the km.</p>
     <div class="chips up" style="--d:3"><span>TODAY</span><span>WEEK</span><span class="on">MONTH</span><span>ALL TIME</span></div>
@@ -197,16 +210,19 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
 
   <section class="slide s7" data-light>
     <p class="kick up" style="--d:0">What it could bring</p>
+    <img class="side up" style="--d:5;top:330px;width:32%" src="img/big.jpg" alt="">
     <h2 class="anton up" style="--d:1;font-size:46px;margin-top:10px">Per month, roughly.</h2>
     <div class="nums">
-      <div class="up" style="--d:2"><b data-to="5000">0</b><span>Story views showing Flatto</span></div>
-      <div class="up" style="--d:3"><b data-to="100">0</b><span>Stories posted</span></div>
+      <div class="up" style="--d:2"><b data-to="100">0</b><span>Stories in Flatto colours</span></div>
+      <div class="up" style="--d:3"><b data-to="5000">0</b><span>Views from your customers' friends</span></div>
       <div class="up" style="--d:4"><b data-to="40">0</b><span>Runners on the board</span></div>
     </div>
-    <p class="foot up" style="--d:6;margin-top:16px">Estimates: ~25 stories a week, each seen by 5–10% of a runner's ~500 followers. The free month shows the real numbers.</p>
+    <p class="up" style="--d:6;margin-top:16px;font-family:var(--display);font-size:22px;letter-spacing:.5px;line-height:1.1">≈ 3–4 influencer posts.<br>But every day, with your own customers.</p>
+    <p class="foot up" style="--d:7;margin-top:10px">Estimates: ~25 stories a week, each seen by 5–10% of a runner's ~500 followers. The free month shows the real numbers.</p>
   </section>
 
   <section class="slide s8" data-light>
+    <img class="banner up" style="--d:0" src="img/photo-tee.jpg" alt="Seseh Club tee">
     <p class="kick up" style="--d:0">What's next</p>
     <h2 class="anton up" style="--d:1;font-size:46px;margin-top:10px">It grows with you.</h2>
     <div class="next">
@@ -225,10 +241,12 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
     <div class="qr up" style="--d:2" id="qr"></div>
     <div class="offer">
       <span class="up" style="--d:3">1 month free</span>
-      <span class="up" style="--d:4">Simple monthly plan after</span>
+      <span class="up" style="--d:4">Then 15M IDR · a lifetime tool</span>
     </div>
-    <p class="lead up" style="--d:5;margin-top:14px">Let's look at the real numbers together.</p>
-    <p class="script up" style="--d:6;font-size:44px;color:var(--sky);margin-top:18px">Flatto</p>
+    <p class="foot up" style="--d:5;margin-top:8px">Set-up in Flatto colours · QR and counter card · 3 months of tweaks · seasonal stories</p>
+    <p class="lead up" style="--d:6;margin-top:12px">Let's look at the real numbers together.</p>
+    <p class="script up" style="--d:7;font-size:44px;color:var(--sky);margin-top:14px">Flatto</p>
+    <img class="peek up" style="--d:8;right:-36px;bottom:24px;width:44%;transform:rotate(-6deg)" src="img/mascot.webp" alt="">
   </section>
 
   <button class="tap l" id="prev" aria-label="Previous slide"></button>
