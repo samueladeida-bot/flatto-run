@@ -97,6 +97,8 @@ input[type=email]{background:var(--bg);color:var(--fg);border:1px solid var(--li
 .mecard span{font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:800}
 .mecard p{margin:0;font-size:13px;color:var(--muted);min-width:0}
 .join{margin-top:12px}
+.mode{justify-content:center}
+.mode .chip span{padding:10px 20px;font-size:14px}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -108,6 +110,11 @@ a{color:var(--sky)}
   <header>
     <p class="logo">Flatto</p>
   </header>
+
+  <div class="chips mode" role="radiogroup" aria-label="What are you posting?">
+    <label class="chip"><input type="radio" name="mode" value="run" checked><span>Run</span></label>
+    <label class="chip"><input type="radio" name="mode" value="coffee"><span>Just coffee</span></label>
+  </div>
 
   <div class="stage">
     <canvas id="cv" width="1080" height="1920" aria-label="Your story preview. Swipe to change style."></canvas>
@@ -124,7 +131,17 @@ a{color:var(--sky)}
     </div>
   </div>
 
-  <section>
+  <section id="coffeeSection" hidden>
+    <h2>Your order</h2>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="drink" value="FLAT WHITE" checked><span>Flat white</span></label>
+      <label class="chip"><input type="radio" name="drink" value="ICED LATTE"><span>Iced latte</span></label>
+      <label class="chip"><input type="radio" name="drink" value="MATCHA"><span>Matcha</span></label>
+      <label class="chip"><input type="radio" name="drink" value="COLD BREW"><span>Cold brew</span></label>
+    </div>
+  </section>
+
+  <section id="runSection">
     <h2>Your run</h2>
     <div class="stats">
       <label for="dist"><input id="dist" type="text" inputmode="decimal" value="8.42" aria-label="Distance in km"><span>KM</span></label>
@@ -135,6 +152,7 @@ a{color:var(--sky)}
     <label class="pick shot" for="shot" id="sources">Fill it from a screenshot<input id="shot" type="file" accept="image/*" hidden></label>
     <p class="hint" id="srcinfo">Strava, Apple Fitness, Garmin or Whoop: screenshot your run summary and we read it.</p>
     <input id="num" type="number" min="1" value="1" hidden>
+    <div class="chips" style="margin-top:12px"><label class="chip"><input type="checkbox" id="hideNums"><span>Hide my numbers on the story</span></label></div>
     <div class="level"><span id="lvlText">Run 1 at Flatto</span><span class="bar"><i id="lvlBar" style="width:0"></i></span></div>
   </section>
 
@@ -399,12 +417,39 @@ function coverRect(img,x,y,w,h){if(!img.naturalWidth)return;const r=Math.max(w/i
 const myBit=d=>profile?`${((profile.total||0)+d.km).toFixed(1)} KM WITH FLATTO`:null;
 function crewBits(d){const b=[];if(myBit(d))b.push(myBit(d));if(d.tier)b.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)b.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);return b}
 
+function drawReceipt(c,rows,total,note){
+  const x=170,y=430,w=W-340,h=1040,ink='#4C2F31',mono='"Space Mono","Courier New",monospace',L=x+60,R=x+w-60,now=new Date();
+  const ds=[now.getDate(),now.getMonth()+1].map(n=>String(n).padStart(2,'0')).join('.')+'.'+String(now.getFullYear()).slice(2),hm=now.toTimeString().slice(0,5);
+  ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=36;ctx.fillStyle='#F7F2E6';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);
+  for(let i=1,n=24;i<=n;i++)ctx.lineTo(x+w-i*w/n,y+h+(i%2?22:0));ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.shadowColor='transparent';
+  const dash=yy=>{ctx.save();ctx.strokeStyle=ink;ctx.lineWidth=3;ctx.setLineDash([12,10]);ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(R,yy);ctx.stroke();ctx.restore()};
+  scriptLogo(W/2,y+170,130,ink);
+  text('SESEH CLUB · BALI',W/2,y+262,`700 30px ${mono}`,ink,'center',4);text(`${ds}   ${hm}`,W/2,y+306,`400 28px ${mono}`,ink);
+  dash(y+350);
+  rows.forEach(([l,v],i)=>{text(l,L,y+420+i*64,`400 34px ${mono}`,ink,'left');text(v,R,y+420+i*64,`700 34px ${mono}`,ink,'right')});
+  dash(y+660);
+  text('TOTAL',L,y+735,`700 40px ${mono}`,ink,'left');text(total,R,y+735,`700 40px ${mono}`,ink,'right');
+  text(note,W/2,y+795,`400 26px ${mono}`,ink,'center',3);
+  ctx.fillStyle=ink;let bx=L+20,seed=rows.join().length*97+now.getDate();while(bx<R-20){seed=(seed*9301+49297)%233280;const bw=2+Math.floor(seed/233280*7);ctx.fillRect(bx,y+830,bw,96);bx+=bw+3+(seed%5)}
+  text(HANDLE,W/2,y+985,`700 30px ${mono}`,ink,'center',3);
+  drawMascot(x+w-150,y-200,440);
+  return y+h;
+}
+function drawStamp(c,top,bottom,center,label){
+  ctx.save();ctx.translate(W/2,1030);ctx.rotate(-.12);ctx.strokeStyle=c;
+  ctx.lineWidth=12;ctx.beginPath();ctx.arc(0,0,370,0,7);ctx.stroke();ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,335,0,7);ctx.stroke();ctx.beginPath();ctx.arc(0,0,215,0,7);ctx.stroke();
+  arcText(top,275,true,'800 58px Inter',c);arcText(bottom,275,false,'800 46px Inter',c);
+  text('★',-275,16,'400 46px Inter',c);text('★',275,16,'400 46px Inter',c);
+  fitText(center,0,50,'Anton',210,360,c);text(label,0,120,'800 28px Inter',c,'center',6);
+  ctx.restore();
+}
+const greeting=()=>{const h=new Date().getHours();return h<12?'GOOD MORNING':h<18?'GOOD AFTERNOON':'GOOD EVENING'};
 function draw(){
   const d=data(),c=val('color'),st=STYLES[styleIdx];level();
   $('paceOut').textContent=d.pace;
   ctx.clearRect(0,0,W,H);
   const now=new Date(),ds=[now.getDate(),now.getMonth()+1].map(n=>String(n).padStart(2,'0')).join('.')+'.'+String(now.getFullYear()).slice(2),hm=now.toTimeString().slice(0,5);
-  if(st==='polaroid'){ctx.fillStyle=c==='#FFFFFF'?'#F4EEDC':c;ctx.fillRect(0,0,W,H)}else if(photo.complete&&photo.naturalWidth)cover(photo);
+  if(st.endsWith('polaroid')){ctx.fillStyle=c==='#FFFFFF'?'#F4EEDC':c;ctx.fillRect(0,0,W,H)}else if(photo.complete&&photo.naturalWidth)cover(photo);
   ctx.shadowColor=c==='#4C2F31'?'rgba(255,255,255,.25)':'rgba(0,0,0,.35)';ctx.shadowBlur=18;
   if(st==='classic'){
     drawMascot(W/2,120,520);
@@ -431,29 +476,11 @@ function draw(){
     [['KM',d.dist],['PACE',d.pace],['TIME',d.time]].forEach(([l,v],i)=>{const cx=x+w*(i*2+1)/6;text(l,cx,y+640,'600 30px Inter',c,'center',5);text(v,cx,y+720,'800 68px Inter',c)});
     scriptLogo(W/2,y+h-50,110,c);footer(y+h+80,c,d);
   }else if(st==='receipt'){
-    const x=170,y=430,w=W-340,h=1040,ink='#4C2F31',mono='"Space Mono","Courier New",monospace',L=x+60,R=x+w-60;
-    ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=36;ctx.fillStyle='#F7F2E6';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);
-    for(let i=1,n=24;i<=n;i++)ctx.lineTo(x+w-i*w/n,y+h+(i%2?22:0));ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.shadowColor='transparent';
-    const dash=yy=>{ctx.save();ctx.strokeStyle=ink;ctx.lineWidth=3;ctx.setLineDash([12,10]);ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(R,yy);ctx.stroke();ctx.restore()};
-    scriptLogo(W/2,y+170,130,ink);
-    text('SESEH CLUB · BALI',W/2,y+262,`700 30px ${mono}`,ink,'center',4);text(`${ds}   ${hm}`,W/2,y+306,`400 28px ${mono}`,ink);
-    dash(y+350);
-    [['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]].forEach(([l,v],i)=>{text(l,L,y+420+i*64,`400 34px ${mono}`,ink,'left');text(v,R,y+420+i*64,`700 34px ${mono}`,ink,'right')});
-    dash(y+660);
-    text('TOTAL',L,y+735,`700 40px ${mono}`,ink,'left');text('1 FLAT WHITE',R,y+735,`700 40px ${mono}`,ink,'right');
-    text(myBit(d)||d.tier||'THANK YOU, RUNNER',W/2,y+795,`400 26px ${mono}`,ink,'center',3);
-    ctx.fillStyle=ink;let bx=L+20,seed=Math.round(d.km*100)+d.n*7;while(bx<R-20){seed=(seed*9301+49297)%233280;const bw=2+Math.floor(seed/233280*7);ctx.fillRect(bx,y+830,bw,96);bx+=bw+3+(seed%5)}
-    text(HANDLE,W/2,y+985,`700 30px ${mono}`,ink,'center',3);
-    drawMascot(x+w-150,y-200,440);
-    if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)text(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`,W/2,y+h+120,'800 30px Inter',c,'center',4);
+    const end=drawReceipt(c,[['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]],'1 FLAT WHITE',myBit(d)||d.tier||'THANK YOU, RUNNER');
+    if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)text(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`,W/2,end+120,'800 30px Inter',c,'center',4);
   }else if(st==='stamp'){
     scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
-    ctx.save();ctx.translate(W/2,1030);ctx.rotate(-.12);ctx.strokeStyle=c;
-    ctx.lineWidth=12;ctx.beginPath();ctx.arc(0,0,370,0,7);ctx.stroke();ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,335,0,7);ctx.stroke();ctx.beginPath();ctx.arc(0,0,215,0,7);ctx.stroke();
-    arcText('FLATTO RUN CLUB',275,true,'800 58px Inter',c);arcText(`SESEH · BALI · ${now.getFullYear()}`,275,false,'800 46px Inter',c);
-    text('★',-275,16,'400 46px Inter',c);text('★',275,16,'400 46px Inter',c);
-    fitText(d.dist,0,50,'Anton',210,360,c);text('KILOMETRES',0,120,'800 28px Inter',c,'center',6);
-    ctx.restore();
+    drawStamp(c,'FLATTO RUN CLUB',`SESEH · BALI · ${now.getFullYear()}`,d.dist,'KILOMETRES');
     text(`${d.time}  ·  ${d.pace} /KM  ·  RUN #${d.num}`,W/2,1570,'800 42px Inter',c,'center',3);
     crewBits(d).forEach((b,i)=>text(b,W/2,1640+i*48,'800 28px Inter',c,'center',4));
   }else if(st==='tee'){
@@ -477,11 +504,70 @@ function draw(){
     drawMascot(W-240,150,380);
     text(`${d.time}  ·  ${d.pace} /KM  ·  RUN #${d.num}`,W/2,1500,'800 42px Inter',ink,'center',3);
     scriptLogo(W/2,1660,130,ink);footer(1750,ink,d);
+  }else if(st==='s-big'){
+    scriptLogo(80,260,140,c,'left');text(HANDLE,86,340,'800 34px Inter',c,'left',3);
+    drawMascot(W-330,700,520);
+    fitText('RUN',W/2-150+150,1180,'Anton',360,W-160,c);fitText('DONE.',W/2,1530,'Anton',360,W-160,c);
+    ctx.fillStyle=c;ctx.fillRect(80,1590,W-160,6);
+    text('COFFEE NOW',80,1680,'800 48px Inter',c,'left',2);text('RUN #'+d.num,W-80,1680,'800 48px Inter',c,'right',2);
+  }else if(st==='s-receipt'){
+    drawReceipt(c,[['1x','MORNING RUN'],['DISTANCE','SECRET'],['PACE','ALSO SECRET'],['FUEL',val('drink')]],'RUN DONE',d.tier||'NUMBERS STAY WITH US');
+  }else if(st==='s-stamp'){
+    scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
+    drawStamp(c,'FLATTO RUN CLUB',`SESEH · BALI · ${now.getFullYear()}`,'DONE','RUN #'+d.num);
+    text(`${ds}  ·  NO STATS, JUST VIBES`,W/2,1570,'800 40px Inter',c,'center',3);
+  }else if(st==='s-mascot'){
+    if(mascot.naturalWidth){const mw=940,mh=mw*mascot.naturalHeight/mascot.naturalWidth;ctx.save();ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=24;ctx.translate(W/2,260+mh/2);ctx.rotate(-.04);ctx.drawImage(mascot,-mw/2,-mh/2,mw,mh);ctx.restore()}
+    fitText('RUN DONE.',W/2,960,'Anton',230,W-160,c);fitText('COFFEE NOW.',W/2,1220,'Anton',230,W-160,c);
+    scriptLogo(W/2,1450,150,c);text(HANDLE,W/2,1550,'800 36px Inter',c,'center',3);
+  }else if(st==='s-polaroid'){
+    ctx.shadowBlur=0;ctx.shadowColor='transparent';const ink=c==='#4C2F31'?'#F4EEDC':'#4C2F31';
+    ctx.save();ctx.translate(W/2,830);ctx.rotate(-.05);ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=40;ctx.shadowOffsetY=14;
+    ctx.fillStyle='#FFFFFF';ctx.fillRect(-410,-520,820,1020);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    coverRect(photo,-370,-480,740,780);
+    ctx.font='96px Yellowtail';ctx.fillStyle='#4C2F31';ctx.textAlign='center';ctx.fillText('ran it. coffee now.',0,420);
+    ctx.restore();
+    drawMascot(W-240,150,380);
+    text(`SESEH  ·  BALI  ·  RUN #${d.num}`,W/2,1500,'800 42px Inter',ink,'center',3);
+    scriptLogo(W/2,1660,130,ink);text(HANDLE,W/2,1750,'800 36px Inter',ink,'center',3);
+  }else if(st==='c-receipt'){
+    const drink=val('drink');drawReceipt(c,[['1x',drink],['VIBES','100%'],['VIEW','RICE FIELDS'],['WIFI','STRONG']],greeting(),'SEE YOU TOMORROW');
+  }else if(st==='c-stamp'){
+    const drink=val('drink');scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
+    drawStamp(c,'FLATTO COFFEE CLUB',`SESEH · BALI · ${now.getFullYear()}`,hm,drink);
+    text(`${ds}  ·  LOST IN SESEH`,W/2,1570,'800 42px Inter',c,'center',3);
+  }else if(st==='c-logo'){
+    const drink=val('drink');scriptLogo(W/2,880,280,c);text('SESEH CLUB',W/2,1010,'800 46px Inter',c,'center',18);
+    text(`${hm}  ·  ${drink}`,W/2,1095,'800 38px Inter',c,'center',6);drawMascot(W/2,1220,500);text(HANDLE,W/2,1700,'800 36px Inter',c,'center',3);
+  }else if(st==='c-tee'){
+    const drink=val('drink');fitText('SESEH',W/2,560,'"Archivo Black"',270,W-140,c,9);fitText('CLUB',W/2,800,'"Archivo Black"',270,W-140,c,9);
+    scriptLogo(W/2,1010,190,c);text('BALI  ·  INDONESIA',W/2,1130,'600 40px Inter',c,'center',14);
+    fitText(`— ${drink} —`,W/2,1300,'Anton',120,W-200,c);drawMascot(W/2,1380,440);text(HANDLE,W/2,1720,'800 36px Inter',c,'center',3);
+  }else if(st==='c-mascot'){
+    const drink=val('drink');
+    if(mascot.naturalWidth){const mw=940,mh=mw*mascot.naturalHeight/mascot.naturalWidth;ctx.save();ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=24;ctx.translate(W/2,260+mh/2);ctx.rotate(-.04);ctx.drawImage(mascot,-mw/2,-mh/2,mw,mh);ctx.restore()}
+    fitText('LOST IN SESEH',W/2,860,'"Archivo Black"',130,W-120,c);
+    fitText(`${drink} O'CLOCK`,W/2,1120,'Anton',200,W-160,c);
+    scriptLogo(W/2,1400,150,c);text(HANDLE,W/2,1500,'800 36px Inter',c,'center',3);
+  }else if(st==='c-polaroid'){
+    ctx.shadowBlur=0;ctx.shadowColor='transparent';const ink=c==='#4C2F31'?'#F4EEDC':'#4C2F31',drink=val('drink').toLowerCase();
+    ctx.save();ctx.translate(W/2,830);ctx.rotate(-.05);ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=40;ctx.shadowOffsetY=14;
+    ctx.fillStyle='#FFFFFF';ctx.fillRect(-410,-520,820,1020);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    coverRect(photo,-370,-480,740,780);
+    ctx.font='96px Yellowtail';ctx.fillStyle='#4C2F31';ctx.textAlign='center';ctx.fillText(`${drink} o'clock`,0,420);
+    ctx.restore();
+    drawMascot(W-240,150,380);
+    text(`SESEH  ·  BALI  ·  ${ds}`,W/2,1500,'800 42px Inter',ink,'center',3);
+    scriptLogo(W/2,1660,130,ink);text(HANDLE,W/2,1750,'800 36px Inter',ink,'center',3);
   }
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
 }
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
-const STYLES=['big','receipt','stamp','tee','mascot','polaroid','classic','bib'];let styleIdx=0;
+const MODES={run:['big','receipt','stamp','tee','mascot','polaroid','classic','bib'],coffee:['c-receipt','c-stamp','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
+let STYLES=MODES.run,styleIdx=0;
+document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';$('coffeeSection').hidden=m!=='coffee';setStyle(0)}));
+document.querySelectorAll('input[name=drink]').forEach(i=>i.addEventListener('change',draw));
+$('hideNums').addEventListener('change',()=>{STYLES=MODES[$('hideNums').checked?'secret':'run'];setStyle(0)});
 function setStyle(i){styleIdx=(i+STYLES.length)%STYLES.length;$('dots').innerHTML=STYLES.map((_,k)=>`<i class="${k===styleIdx?'on':''}"></i>`).join('');draw()}
 $('prev').addEventListener('click',()=>setStyle(styleIdx-1));$('next').addEventListener('click',()=>setStyle(styleIdx+1));
 let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40)setStyle(styleIdx+(e.clientX<sx?1:-1));sx=null});
@@ -490,12 +576,12 @@ let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventList
 $('share').addEventListener('click',()=>{
   draw();const d=data();
   cv.toBlob(async b=>{
-    const file=new File([b],'flatto-run.png',{type:'image/png'});
+    const coffee=val('mode')==='coffee',file=new File([b],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'}),count=()=>{if(!coffee)addToCrew(d)};
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file]});say(profile?'Posted? Show it at the counter.':'Posted? Add your email below to count your km.');addToCrew(d)}
+      try{await navigator.share({files:[file]});say(coffee||profile?'Posted? Show it at the counter.':'Posted? Add your email below to count your km.');count()}
       catch(e){if(e.name!=='AbortError')say("Sharing didn't open. Press and hold the story below to save it.")}
     }else{
-      const out=$('out');out.src=URL.createObjectURL(b);out.hidden=false;addToCrew(d);
+      const out=$('out');out.src=URL.createObjectURL(b);out.hidden=false;count();
       say('Press and hold the story below, then Save to Photos and post it from Instagram.');
     }
   },'image/png');
