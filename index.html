@@ -70,7 +70,7 @@ canvas{display:block;width:100%;max-width:300px;aspect-ratio:9/16;margin:0 auto;
 .pick.main{background:var(--fg);color:var(--bg);border:0;font-size:16px;min-height:56px}
 button.second{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .cta.ready .pick.main{background:transparent;color:var(--fg);border:1px dashed var(--muted);min-height:44px;font-size:13px}
-.cta.ready button.second{background:var(--fg);color:var(--bg);border:0;min-height:56px;font-size:16px}
+.cta.ready #share{background:var(--fg);color:var(--bg);border:0;min-height:56px;font-size:16px}
 canvas{max-width:320px}
 .rank{list-style:none;margin:12px 0;padding:0;display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums}
 .rank li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-size:14px}
@@ -99,6 +99,7 @@ input[type=email]{background:var(--bg);color:var(--fg);border:1px solid var(--li
 .join{margin-top:12px}
 .mode{justify-content:center}
 .mode .chip span{padding:10px 20px;font-size:14px}
+button.copied{border-color:#8FD19E;color:#8FD19E}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -158,9 +159,10 @@ a{color:var(--sky)}
 
   <div class="cta">
     <label class="pick main" for="photo" id="photoBtn">Add your photo<input id="photo" type="file" accept="image/*" hidden></label>
-    <button id="share" type="button" class="second">Share to Instagram</button>
+    <button id="copyTag" type="button" class="second">1 · Copy @flatto.bali</button>
+    <button id="share" type="button" class="second">2 · Share to Instagram</button>
     <p class="status" id="status" role="status"></p>
-    <p class="hint" style="text-align:center">Share menu: swipe the app row to <b>Instagram → Story</b>. Then tap <b>Aa → Paste</b> to tag @flatto.bali. Not there? <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>.</p>
+    <p class="hint" style="text-align:center">Share menu: swipe the app row to <b>Instagram → Story</b>. In your story, tap <b>Aa → Paste</b> to tag @flatto.bali. Not there? <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>.</p>
     <img class="out" id="out" alt="Your finished story" hidden>
   </div>
 
@@ -561,6 +563,7 @@ function draw(){
     scriptLogo(W/2,1660,130,ink);text(HANDLE,W/2,1750,'800 36px Inter',ink,'center',3);
   }
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
+  queueBlob();
 }
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const MODES={run:['big','receipt','stamp','tee','mascot','polaroid','classic','bib'],coffee:['c-receipt','c-stamp','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
@@ -573,20 +576,28 @@ $('prev').addEventListener('click',()=>setStyle(styleIdx-1));$('next').addEventL
 let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40)setStyle(styleIdx+(e.clientX<sx?1:-1));sx=null});
 
 /* ---------- share ---------- */
+// The story PNG is prepared after every redraw, so the tap on Share opens the share sheet right away (Safari needs that).
+let readyBlob=null,blobTimer=null;
+function queueBlob(){readyBlob=null;clearTimeout(blobTimer);blobTimer=setTimeout(()=>cv.toBlob(b=>{readyBlob=b},'image/png'),120)}
+// Instagram can't be told to tag an account, so the handle is copied on its own tap; Aa > Paste in the story makes it a mention.
+$('copyTag').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(HANDLE);$('copyTag').textContent='✓ @flatto.bali copied';$('copyTag').classList.add('copied')}
+  catch(e){say('Copying is blocked here. In your story, type @flatto.bali in Aa.')}
+});
+function afterShare(coffee,d){
+  if(!coffee)addToCrew(d);
+  say((coffee||profile?'Posted? Show it at the counter.':'Posted? Add your email below to count your km.'));
+}
 $('share').addEventListener('click',()=>{
-  // Instagram can't be told to tag an account, so the handle goes to the clipboard: Aa > Paste in the story makes it a real mention.
-  try{navigator.clipboard.writeText(HANDLE).catch(()=>{})}catch(e){}
-  draw();const d=data();
-  cv.toBlob(async b=>{
-    const coffee=val('mode')==='coffee',file=new File([b],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'}),count=()=>{if(!coffee)addToCrew(d)};
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file]});say((coffee||profile?'Posted? Show it at the counter.':'Posted? Add your email below to count your km.')+' @flatto.bali is copied: in your story tap Aa, then Paste to tag Flatto.');count()}
-      catch(e){if(e.name!=='AbortError')say("Sharing didn't open. Press and hold the story below to save it.")}
-    }else{
-      const out=$('out');out.src=URL.createObjectURL(b);out.hidden=false;count();
-      say('Press and hold the story below, then Save to Photos and post it from Instagram.');
-    }
-  },'image/png');
+  const d=data(),coffee=val('mode')==='coffee';
+  if(!readyBlob){say('One second, your story is getting ready. Tap Share again.');draw();return}
+  const file=new File([readyBlob],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file]}).then(()=>afterShare(coffee,d)).catch(e=>{if(e.name!=='AbortError')say("Sharing didn't open. Press and hold the story below to save it.")});
+  }else{
+    const out=$('out');out.src=URL.createObjectURL(readyBlob);out.hidden=false;afterShare(coffee,d);
+    say('Press and hold the story below, then Save to Photos and post it from Instagram.');
+  }
 });
 $('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const img=new Image();img.onload=()=>{photo=img;$('photoBtn').firstChild.textContent='Change photo';document.querySelector('.cta').classList.add('ready');draw()};img.src=URL.createObjectURL(f)});
 document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',()=>{if(['dist','time'].includes(i.id)){runName='Your run';runId=null}draw()})});
