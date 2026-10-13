@@ -134,7 +134,7 @@ a{color:var(--sky)}
       <label for="time"><input id="time" type="text" inputmode="numeric" value="43:41" aria-label="Time"><span>TIME</span></label>
       <div><b id="paceOut">–</b><span>PACE /KM</span></div>
     </div>
-    <p class="hint" style="margin-top:6px">Tap a number to change it.</p>
+    <p class="hint" style="margin-top:6px">Tap a number to change it. For time, type the digits: 4341 gives 43:41.</p>
     <label class="pick shot" for="shot" id="sources">Fill it from a screenshot<input id="shot" type="file" accept="image/*" hidden></label>
     <p class="hint" id="srcinfo">Strava, Apple Fitness, Garmin or Whoop: screenshot your run summary and we read it.</p>
     <input id="num" type="number" min="1" value="1" hidden>
@@ -196,6 +196,13 @@ function level(){
 $('num').value=store.get('flattoRuns',0)+1;
 
 let runName='Example run';
+// The iPhone number pad has no ":", so the time is typed as digits and formatted as you go: 4341 -> 43:41, 10520 -> 1:05:20.
+$('time').addEventListener('input',e=>{
+  const d=e.target.value.replace(/\D/g,'').replace(/^0+(?=\d)/,'').slice(0,6);
+  if(d.length<=2){e.target.value=d;return}
+  const sec=d.slice(-2),min=d.slice(-4,-2),h=d.slice(0,-4);
+  e.target.value=(h?`${h}:${min.padStart(2,'0')}`:String(+min))+':'+sec;
+});
 
 /* ---------- screenshot reading ---------- */
 function readSummary(txt){
