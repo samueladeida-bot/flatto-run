@@ -90,6 +90,12 @@ button.wide{width:100%}
 input[type=email]{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:12px 10px;font:600 16px var(--body);width:100%}
 .check{flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:12px}
 .err{color:#F2A0A0;font-size:13px;margin:0;min-height:0}
+.stats{display:grid;grid-template-columns:1.1fr 1.1fr 1fr;gap:8px;font-variant-numeric:tabular-nums}
+.stats label,.stats div{display:flex;flex-direction:column;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 12px;min-width:0;text-transform:none;letter-spacing:0}
+.stats label:focus-within{border-color:var(--sky)}
+.stats input{all:unset;font-family:var(--display);font-size:32px;line-height:1.1;color:var(--fg);width:100%;font-variant-numeric:tabular-nums}
+.stats b{font-family:var(--display);font-weight:400;font-size:32px;line-height:1.1;color:var(--muted)}
+.stats span{font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:800}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -122,17 +128,16 @@ a{color:var(--sky)}
   </div>
 
   <section>
-    <div class="runline">
-      <div><b id="runName">Example run</b><span id="runMeta"></span></div>
-      <button class="ghost" id="editRun" type="button" aria-expanded="false">Edit</button>
+    <h2>Your run</h2>
+    <div class="stats">
+      <label for="dist"><input id="dist" type="text" inputmode="decimal" value="8.42" aria-label="Distance in km"><span>KM</span></label>
+      <label for="time"><input id="time" type="text" inputmode="numeric" value="43:41" aria-label="Time"><span>TIME</span></label>
+      <div><b id="paceOut">–</b><span>PACE /KM</span></div>
     </div>
-    <label class="pick shot" for="shot" id="sources">Add your run screenshot<input id="shot" type="file" accept="image/*" hidden></label>
-    <p class="hint" id="srcinfo">Screenshot your run summary in Strava, Apple Fitness, Garmin or Whoop. We read the km and time. Or tap Edit.</p>
-    <div class="grid" id="manual" hidden>
-      <label for="dist">km<input id="dist" type="text" inputmode="decimal" value="8.42"></label>
-      <label for="time">Time<input id="time" type="text" inputmode="numeric" value="43:41"></label>
-      <label for="num">Run #<input id="num" type="number" min="1" value="1"></label>
-    </div>
+    <p class="hint" style="margin-top:6px">Tap a number to change it.</p>
+    <label class="pick shot" for="shot" id="sources">Fill it from a screenshot<input id="shot" type="file" accept="image/*" hidden></label>
+    <p class="hint" id="srcinfo">Strava, Apple Fitness, Garmin or Whoop: screenshot your run summary and we read it.</p>
+    <input id="num" type="number" min="1" value="1" hidden>
     <div class="level"><span id="lvlText">Run 1 at Flatto</span><span class="bar"><i id="lvlBar" style="width:0"></i></span></div>
   </section>
 
@@ -191,7 +196,6 @@ function level(){
 $('num').value=store.get('flattoRuns',0)+1;
 
 let runName='Example run';
-$('editRun').addEventListener('click',()=>{const m=$('manual');m.hidden=!m.hidden;$('editRun').setAttribute('aria-expanded',!m.hidden);$('editRun').textContent=m.hidden?'Edit':'Done'});
 
 /* ---------- screenshot reading ---------- */
 function readSummary(txt){
@@ -208,16 +212,16 @@ function readSummary(txt){
 }
 $('shot').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
-  if(!window.Tesseract){$('srcinfo').textContent="Couldn't load the reader. Type your km and time below.";return}
+  if(!window.Tesseract){$('srcinfo').textContent="Couldn't load the reader. Tap the numbers above to type them.";return}
   $('srcinfo').textContent='Reading your screenshot…';
   try{
     const {data:{text}}=await Tesseract.recognize(f,'eng');
     const {km,secs}=readSummary(text);
     if(km)$('dist').value=km.toFixed(2);if(secs)$('time').value=fmtTime(secs);
     runName='From your screenshot';runId='shot-'+(km||0)+'-'+(secs||0);
-    $('srcinfo').textContent=km&&secs?'Got it. Check the numbers below.':km||secs?'Got part of it. Fill in the rest below.':"Couldn't read it. Type your km and time below.";
+    $('srcinfo').textContent=km&&secs?'Got it. Check the numbers above.':km||secs?'Got part of it. Tap the missing number above.':"Couldn't read it. Tap the numbers above to type them.";
     draw();
-  }catch(err){$('srcinfo').textContent="Couldn't read it. Type your km and time below."}
+  }catch(err){$('srcinfo').textContent="Couldn't read it. Tap the numbers above to type them."}
 });
 
 /* ---------- crew counter ---------- */
@@ -319,7 +323,7 @@ function footer(y,c,d){
 
 function draw(){
   const d=data(),c=val('color'),st=STYLES[styleIdx];level();
-  $('runName').textContent=runName;$('runMeta').textContent=`${d.dist} km · ${d.time} · ${d.pace} /km`;
+  $('paceOut').textContent=d.pace;
   ctx.clearRect(0,0,W,H);
   if(photo.complete&&photo.naturalWidth)cover(photo);
   ctx.shadowColor=c==='#4C2F31'?'rgba(255,255,255,.25)':'rgba(0,0,0,.35)';ctx.shadowBlur=18;
