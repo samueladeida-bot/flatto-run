@@ -131,10 +131,10 @@ a{color:var(--sky)}
     <h2>Your run</h2>
     <div class="stats">
       <label for="dist"><input id="dist" type="text" inputmode="decimal" value="8.42" aria-label="Distance in km"><span>KM</span></label>
-      <label for="time"><input id="time" type="text" inputmode="numeric" value="43:41" aria-label="Time"><span>TIME</span></label>
+      <label for="time"><input id="time" type="text" inputmode="decimal" value="43:41" aria-label="Time"><span>TIME</span></label>
       <div><b id="paceOut">–</b><span>PACE /KM</span></div>
     </div>
-    <p class="hint" style="margin-top:6px">Tap a number to change it. For time, type the digits: 4341 gives 43:41.</p>
+    <p class="hint" style="margin-top:6px">Tap a number to change it. For time, the , key types the colon: 12,14 gives 12:14.</p>
     <label class="pick shot" for="shot" id="sources">Fill it from a screenshot<input id="shot" type="file" accept="image/*" hidden></label>
     <p class="hint" id="srcinfo">Strava, Apple Fitness, Garmin or Whoop: screenshot your run summary and we read it.</p>
     <input id="num" type="number" min="1" value="1" hidden>
@@ -196,12 +196,26 @@ function level(){
 $('num').value=store.get('flattoRuns',0)+1;
 
 let runName='Example run';
-// The iPhone number pad has no ":", so the time is typed as digits and formatted as you go: 4341 -> 43:41, 10520 -> 1:05:20.
+// The iPhone pads have no ":" key, so the decimal pad's "." or "," types it: 12,14 shows 12:14 as you type.
+// Digits only (1214) still work and are formatted when you leave the field.
+// Distance: "8,42" or "8.42" as typed, one separator, tidied to 8.42 when you leave the field.
+$('dist').addEventListener('input',e=>{
+  let v=e.target.value.replace(/[^\d.,]/g,'');const i=v.search(/[.,]/);
+  if(i>=0)v=v.slice(0,i+1)+v.slice(i+1).replace(/[.,]/g,'').slice(0,2);
+  e.target.value=v.replace(/^(\d{3})\d+/,'$1');
+});
+$('dist').addEventListener('blur',e=>{const n=parseFloat(e.target.value.replace(',','.'));if(n>0){e.target.value=n.toFixed(2);draw()}});
+$('time').inputMode='decimal';
 $('time').addEventListener('input',e=>{
-  const d=e.target.value.replace(/\D/g,'').replace(/^0+(?=\d)/,'').slice(0,6);
-  if(d.length<=2){e.target.value=d;return}
-  const sec=d.slice(-2),min=d.slice(-4,-2),h=d.slice(0,-4);
-  e.target.value=(h?`${h}:${min.padStart(2,'0')}`:String(+min))+':'+sec;
+  const v=e.target.value.replace(/[.,;\s]/g,':').replace(/[^\d:]/g,'').replace(/:{2,}/g,':').replace(/^:/,'');
+  e.target.value=v.split(':').slice(0,3).join(':');
+});
+$('time').addEventListener('blur',e=>{
+  const v=e.target.value;let t=null;
+  if(v.includes(':')){const w=v.replace(/:$/,'');t=w.includes(':')?parseTime(w):+w*60}
+  else if(/^\d{3,6}$/.test(v)){const sec=+v.slice(-2),min=+v.slice(-4,-2),h=+(v.slice(0,-4)||0);t=h*3600+min*60+sec}
+  else if(/^\d{1,2}$/.test(v))t=+v*60;
+  if(t){e.target.value=fmtTime(t);draw()}
 });
 
 /* ---------- screenshot reading ---------- */
