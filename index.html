@@ -160,7 +160,7 @@ a{color:var(--sky)}
     <label class="pick main" for="photo" id="photoBtn">Add your photo<input id="photo" type="file" accept="image/*" hidden></label>
     <button id="share" type="button" class="second">Share to Instagram</button>
     <p class="status" id="status" role="status"></p>
-    <p class="hint" style="text-align:center">Share menu: swipe the app row to <b>Instagram → Story</b>. Not there? <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>.</p>
+    <p class="hint" style="text-align:center">Share menu: swipe the app row to <b>Instagram → Story</b>. Then tap <b>Aa → Paste</b> to tag @flatto.bali. Not there? <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>.</p>
     <img class="out" id="out" alt="Your finished story" hidden>
   </div>
 
@@ -574,11 +574,13 @@ let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventList
 
 /* ---------- share ---------- */
 $('share').addEventListener('click',()=>{
+  // Instagram can't be told to tag an account, so the handle goes to the clipboard: Aa > Paste in the story makes it a real mention.
+  try{navigator.clipboard.writeText(HANDLE).catch(()=>{})}catch(e){}
   draw();const d=data();
   cv.toBlob(async b=>{
     const coffee=val('mode')==='coffee',file=new File([b],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'}),count=()=>{if(!coffee)addToCrew(d)};
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file]});say(coffee||profile?'Posted? Show it at the counter.':'Posted? Add your email below to count your km.');count()}
+      try{await navigator.share({files:[file]});say((coffee||profile?'Posted? Show it at the counter.':'Posted? Add your email below to count your km.')+' @flatto.bali is copied: in your story tap Aa, then Paste to tag Flatto.');count()}
       catch(e){if(e.name!=='AbortError')say("Sharing didn't open. Press and hold the story below to save it.")}
     }else{
       const out=$('out');out.src=URL.createObjectURL(b);out.hidden=false;count();
