@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Flatto Run Story</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&family=Anton&family=Archivo+Black&family=Inter:wght@500;600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&family=Anton&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Inter:wght@500;600;800&display=swap">
 <style>
 /* Layout: one narrow column — run source, style, photo, live 9:16 story, share. Single dark look, like a night-run screen. */
 :root{
@@ -342,11 +342,26 @@ function footer(y,c,d){
   bits.forEach((b,i)=>text(b,W/2,y+58+i*48,'800 28px Inter',c,'center',4));
 }
 
+function fitText(str,x,y,family,size,max,c,stroke=0){
+  ctx.font=`400 ${size}px ${family}`;const w=ctx.measureText(str).width;if(w>max)ctx.font=`400 ${size*max/w}px ${family}`;
+  ctx.textAlign='center';if(stroke){ctx.save();ctx.strokeStyle=c;ctx.lineWidth=stroke;ctx.lineJoin='round';ctx.strokeText(str,x,y);ctx.restore()}else{ctx.fillStyle=c;ctx.fillText(str,x,y)}
+}
+function arcText(str,r,top,font,c){
+  ctx.font=font;ctx.fillStyle=c;ctx.textAlign='center';ctx.textBaseline='middle';
+  const chars=[...str],ws=chars.map(ch=>ctx.measureText(ch).width+8),tot=ws.reduce((a,b)=>a+b,0)/r;
+  let a=top?-Math.PI/2-tot/2:Math.PI/2+tot/2;
+  chars.forEach((ch,i)=>{const da=ws[i]/r,m=top?a+da/2:a-da/2;ctx.save();ctx.translate(r*Math.cos(m),r*Math.sin(m));ctx.rotate(top?m+Math.PI/2:m-Math.PI/2);ctx.fillText(ch,0,0);ctx.restore();a=top?a+da:a-da});
+  ctx.textBaseline='alphabetic';
+}
+function coverRect(img,x,y,w,h){if(!img.naturalWidth)return;const r=Math.max(w/img.naturalWidth,h/img.naturalHeight),iw=img.naturalWidth*r,ih=img.naturalHeight*r;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}
+function crewBits(d){const b=[];if(d.tier)b.push(d.tier);if(crewM!=null)b.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);return b}
+
 function draw(){
   const d=data(),c=val('color'),st=STYLES[styleIdx];level();
   $('paceOut').textContent=d.pace;
   ctx.clearRect(0,0,W,H);
-  if(photo.complete&&photo.naturalWidth)cover(photo);
+  const now=new Date(),ds=[now.getDate(),now.getMonth()+1].map(n=>String(n).padStart(2,'0')).join('.')+'.'+String(now.getFullYear()).slice(2),hm=now.toTimeString().slice(0,5);
+  if(st==='polaroid'){ctx.fillStyle=c==='#FFFFFF'?'#F4EEDC':c;ctx.fillRect(0,0,W,H)}else if(photo.complete&&photo.naturalWidth)cover(photo);
   ctx.shadowColor=c==='#4C2F31'?'rgba(255,255,255,.25)':'rgba(0,0,0,.35)';ctx.shadowBlur=18;
   if(st==='classic'){
     drawMascot(W/2,120,520);
@@ -372,11 +387,58 @@ function draw(){
     ctx.save();ctx.strokeStyle=c;ctx.lineWidth=5;ctx.setLineDash([18,14]);ctx.beginPath();ctx.moveTo(x+50,y+570);ctx.lineTo(x+w-50,y+570);ctx.stroke();ctx.restore();
     [['KM',d.dist],['PACE',d.pace],['TIME',d.time]].forEach(([l,v],i)=>{const cx=x+w*(i*2+1)/6;text(l,cx,y+640,'600 30px Inter',c,'center',5);text(v,cx,y+720,'800 68px Inter',c)});
     scriptLogo(W/2,y+h-50,110,c);footer(y+h+80,c,d);
+  }else if(st==='receipt'){
+    const x=170,y=430,w=W-340,h=1040,ink='#4C2F31',mono='"Space Mono","Courier New",monospace',L=x+60,R=x+w-60;
+    ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=36;ctx.fillStyle='#F7F2E6';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);
+    for(let i=1,n=24;i<=n;i++)ctx.lineTo(x+w-i*w/n,y+h+(i%2?22:0));ctx.closePath();ctx.fill();ctx.shadowBlur=0;ctx.shadowColor='transparent';
+    const dash=yy=>{ctx.save();ctx.strokeStyle=ink;ctx.lineWidth=3;ctx.setLineDash([12,10]);ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(R,yy);ctx.stroke();ctx.restore()};
+    scriptLogo(W/2,y+170,130,ink);
+    text('SESEH CLUB · BALI',W/2,y+262,`700 30px ${mono}`,ink,'center',4);text(`${ds}   ${hm}`,W/2,y+306,`400 28px ${mono}`,ink);
+    dash(y+350);
+    [['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]].forEach(([l,v],i)=>{text(l,L,y+420+i*64,`400 34px ${mono}`,ink,'left');text(v,R,y+420+i*64,`700 34px ${mono}`,ink,'right')});
+    dash(y+660);
+    text('TOTAL',L,y+735,`700 40px ${mono}`,ink,'left');text('1 FLAT WHITE',R,y+735,`700 40px ${mono}`,ink,'right');
+    text(d.tier||'THANK YOU, RUNNER',W/2,y+795,`400 26px ${mono}`,ink,'center',3);
+    ctx.fillStyle=ink;let bx=L+20,seed=Math.round(d.km*100)+d.n*7;while(bx<R-20){seed=(seed*9301+49297)%233280;const bw=2+Math.floor(seed/233280*7);ctx.fillRect(bx,y+830,bw,96);bx+=bw+3+(seed%5)}
+    text(HANDLE,W/2,y+985,`700 30px ${mono}`,ink,'center',3);
+    drawMascot(x+w-150,y-200,440);
+    if(crewM!=null)text(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`,W/2,y+h+120,'800 30px Inter',c,'center',4);
+  }else if(st==='stamp'){
+    scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
+    ctx.save();ctx.translate(W/2,1030);ctx.rotate(-.12);ctx.strokeStyle=c;
+    ctx.lineWidth=12;ctx.beginPath();ctx.arc(0,0,370,0,7);ctx.stroke();ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,335,0,7);ctx.stroke();ctx.beginPath();ctx.arc(0,0,215,0,7);ctx.stroke();
+    arcText('FLATTO RUN CLUB',275,true,'800 58px Inter',c);arcText(`SESEH · BALI · ${now.getFullYear()}`,275,false,'800 46px Inter',c);
+    text('★',-275,16,'400 46px Inter',c);text('★',275,16,'400 46px Inter',c);
+    fitText(d.dist,0,50,'Anton',210,360,c);text('KILOMETRES',0,120,'800 28px Inter',c,'center',6);
+    ctx.restore();
+    text(`${d.time}  ·  ${d.pace} /KM  ·  RUN #${d.num}`,W/2,1570,'800 42px Inter',c,'center',3);
+    crewBits(d).forEach((b,i)=>text(b,W/2,1640+i*48,'800 28px Inter',c,'center',4));
+  }else if(st==='tee'){
+    fitText('SESEH',W/2,560,'"Archivo Black"',270,W-140,c,9);fitText('CLUB',W/2,800,'"Archivo Black"',270,W-140,c,9);
+    scriptLogo(W/2,1010,190,c);text('BALI  ·  INDONESIA',W/2,1130,'600 40px Inter',c,'center',14);
+    [['KM',d.dist],['TIME',d.time],['PACE',d.pace]].forEach(([l,v],i)=>{const cx=W*(i*2+1)/6;fitText(v,cx,1310,'Anton',120,300,c);text(l,cx,1365,'800 28px Inter',c,'center',6)});
+    drawMascot(W/2,1410,440);footer(1720,c,d);
+  }else if(st==='mascot'){
+    if(mascot.naturalWidth){const mw=940,mh=mw*mascot.naturalHeight/mascot.naturalWidth;ctx.save();ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=24;ctx.translate(W/2,260+mh/2);ctx.rotate(-.04);ctx.drawImage(mascot,-mw/2,-mh/2,mw,mh);ctx.restore()}
+    fitText('LOST IN SESEH',W/2,860,'"Archivo Black"',130,W-120,c);
+    fitText(`${d.dist} KM`,W/2,1170,'Anton',270,W-160,c);
+    text(`${d.time}  ·  ${d.pace} /KM  ·  RUN #${d.num}`,W/2,1280,'800 44px Inter',c,'center',3);
+    scriptLogo(W/2,1490,140,c);footer(1585,c,d);
+  }else if(st==='polaroid'){
+    ctx.shadowBlur=0;ctx.shadowColor='transparent';const ink=c==='#4C2F31'?'#F4EEDC':'#4C2F31';
+    ctx.save();ctx.translate(W/2,830);ctx.rotate(-.05);ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=40;ctx.shadowOffsetY=14;
+    ctx.fillStyle='#FFFFFF';ctx.fillRect(-410,-520,820,1020);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    coverRect(photo,-370,-480,740,780);
+    ctx.font='96px Yellowtail';ctx.fillStyle='#4C2F31';ctx.textAlign='center';ctx.fillText(`${d.dist} km, then coffee`,0,420);
+    ctx.restore();
+    drawMascot(W-240,150,380);
+    text(`${d.time}  ·  ${d.pace} /KM  ·  RUN #${d.num}`,W/2,1500,'800 42px Inter',ink,'center',3);
+    scriptLogo(W/2,1660,130,ink);footer(1750,ink,d);
   }
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
 }
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
-const STYLES=['big','classic','bib'];let styleIdx=0;
+const STYLES=['big','receipt','stamp','tee','mascot','polaroid','classic','bib'];let styleIdx=0;
 function setStyle(i){styleIdx=(i+STYLES.length)%STYLES.length;$('dots').innerHTML=STYLES.map((_,k)=>`<i class="${k===styleIdx?'on':''}"></i>`).join('');draw()}
 $('prev').addEventListener('click',()=>setStyle(styleIdx-1));$('next').addEventListener('click',()=>setStyle(styleIdx+1));
 let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40)setStyle(styleIdx+(e.clientX<sx?1:-1));sx=null});
@@ -399,7 +461,7 @@ $('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
 document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',()=>{if(['dist','time'].includes(i.id)){runName='Your run';runId=null}draw()})});
 photo.onload=draw;mascot.onload=draw;
 setStyle(0);
-Promise.all(['140px Yellowtail','400px Anton','300px "Archivo Black"','800 40px Inter','600 30px Inter'].map(f=>document.fonts.load(f))).finally(draw);
+Promise.all(['140px Yellowtail','400px Anton','300px "Archivo Black"','800 40px Inter','600 30px Inter','700 40px "Space Mono"','400 30px "Space Mono"'].map(f=>document.fonts.load(f))).finally(draw);
 loadCrew();showBoard();
 </script>
 </body>
