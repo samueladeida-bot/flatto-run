@@ -22,10 +22,6 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);margin:0;paddi
 header{text-align:center}
 .logo{font-family:var(--script);font-size:54px;line-height:1;margin:0}
 .kick{font-size:11px;letter-spacing:4px;color:var(--muted);font-weight:600;margin-top:6px}
-.crew{display:flex;justify-content:center;gap:18px;margin-top:14px;font-variant-numeric:tabular-nums}
-.crew div{text-align:center}
-.crew b{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:1}
-.crew span{font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:800}
 h2{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.5px;margin:0 0 12px;display:flex;gap:10px;align-items:baseline}
 h2 small{font-family:var(--body);font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:800}
 section{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}
@@ -106,10 +102,6 @@ a{color:var(--sky)}
 <div class="wrap">
   <header>
     <p class="logo">Flatto</p>
-    <div class="crew" id="crew" hidden>
-      <div><b id="crewKm">–</b><span>KM BY THE CREW</span></div>
-      <div><b id="crewRuns">–</b><span>RUNS POSTED</span></div>
-    </div>
   </header>
 
   <div class="stage">
@@ -255,7 +247,8 @@ async function loadCrew(){
     crewM=Math.max(0,a.value||0);crewRuns=Math.max(0,b.value||0);showCrew();draw();
   }catch(e){}
 }
-function showCrew(){if(crewM==null)return;$('crew').hidden=false;$('crewKm').textContent=Math.round(crewM/1000).toLocaleString('en-US');$('crewRuns').textContent=crewRuns.toLocaleString('en-US')}
+const CREW_MIN=100000; // metres: the crew total shows up only once it's worth bragging about
+function showCrew(){if(crewM==null||crewM<CREW_MIN)return;$('boardNote').textContent=`The crew ran ${Math.round(crewM/1000).toLocaleString('en-US')} km in ${new Date().toLocaleDateString('en-GB',{month:'long'})} over ${crewRuns.toLocaleString('en-US')} runs. Ranked by distance, not speed.`}
 async function addToCrew(d){
   const id=runId||`manual-${d.dist}-${d.time}`,done=store.get('flattoPosted',[]);
   store.set('flattoRuns',Math.max(store.get('flattoRuns',0),d.n));
@@ -338,7 +331,7 @@ function text(s,x,y,font,c,align='center',ls=0){ctx.font=font;ctx.fillStyle=c;ct
 function drawMascot(cx,y,w){if(!$('mascot').checked||!mascot.naturalWidth)return;const h=w*mascot.naturalHeight/mascot.naturalWidth;ctx.save();ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=20;ctx.translate(cx,y+h/2);ctx.rotate(-.05);ctx.drawImage(mascot,-w/2,-h/2,w,h);ctx.restore()}
 function footer(y,c,d){
   text(HANDLE,W/2,y,'800 36px Inter',c,'center',3);
-  const bits=[];if(d.tier)bits.push(d.tier);if(crewM!=null)bits.push(`CREW · ${Math.round((crewM+(d.km*1000))/1000).toLocaleString('en-US')} KM IN ${monthName}`);
+  const bits=[];if(d.tier)bits.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)bits.push(`CREW · ${Math.round((crewM+(d.km*1000))/1000).toLocaleString('en-US')} KM IN ${monthName}`);
   bits.forEach((b,i)=>text(b,W/2,y+58+i*48,'800 28px Inter',c,'center',4));
 }
 
@@ -354,7 +347,7 @@ function arcText(str,r,top,font,c){
   ctx.textBaseline='alphabetic';
 }
 function coverRect(img,x,y,w,h){if(!img.naturalWidth)return;const r=Math.max(w/img.naturalWidth,h/img.naturalHeight),iw=img.naturalWidth*r,ih=img.naturalHeight*r;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}
-function crewBits(d){const b=[];if(d.tier)b.push(d.tier);if(crewM!=null)b.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);return b}
+function crewBits(d){const b=[];if(d.tier)b.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)b.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);return b}
 
 function draw(){
   const d=data(),c=val('color'),st=STYLES[styleIdx];level();
@@ -375,7 +368,7 @@ function draw(){
     text(d.dist,76,1500,'400 420px Anton',c,'left');text('KM',76+bw+20,1500,'400 120px Anton',c,'left');
     ctx.fillStyle=c;ctx.fillRect(80,1560,W-160,6);
     text(d.pace+' /KM',80,1650,'800 48px Inter',c,'left',2);text(d.time,W/2,1650,'800 48px Inter',c,'center',2);text('RUN #'+d.num,W-80,1650,'800 48px Inter',c,'right',2);
-    const bits=[];if(d.tier)bits.push(d.tier);if(crewM!=null)bits.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);
+    const bits=[];if(d.tier)bits.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)bits.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);
     text(bits.join('  ·  '),80,1730,'800 26px Inter',c,'left',3);
   }else if(st==='bib'){
     drawMascot(W/2,500,560);
@@ -402,7 +395,7 @@ function draw(){
     ctx.fillStyle=ink;let bx=L+20,seed=Math.round(d.km*100)+d.n*7;while(bx<R-20){seed=(seed*9301+49297)%233280;const bw=2+Math.floor(seed/233280*7);ctx.fillRect(bx,y+830,bw,96);bx+=bw+3+(seed%5)}
     text(HANDLE,W/2,y+985,`700 30px ${mono}`,ink,'center',3);
     drawMascot(x+w-150,y-200,440);
-    if(crewM!=null)text(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`,W/2,y+h+120,'800 30px Inter',c,'center',4);
+    if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)text(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`,W/2,y+h+120,'800 30px Inter',c,'center',4);
   }else if(st==='stamp'){
     scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
     ctx.save();ctx.translate(W/2,1030);ctx.rotate(-.12);ctx.strokeStyle=c;
