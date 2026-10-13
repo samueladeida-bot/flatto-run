@@ -167,7 +167,7 @@ a{color:var(--sky)}
   </section>
 
   <div class="cta">
-    <label class="pick main" for="photo" id="photoBtn">Add your photo<input id="photo" type="file" accept="image/*" hidden></label>
+    <label class="pick main" for="photo" id="photoBtn">Add your photo or video<input id="photo" type="file" accept="image/*,video/*" hidden></label>
     <button id="copyTag" type="button" class="second">1 · Copy @flatto.bali</button>
     <button id="share" type="button" class="second">2 · Share to Instagram</button>
     <p class="status" id="status" role="status"></p>
@@ -417,8 +417,11 @@ async function addToBoard(d,id){
 }
 
 /* ---------- drawing ---------- */
+const mw=m=>m.videoWidth||m.naturalWidth||0,mh=m=>m.videoHeight||m.naturalHeight||0;
+// Background is the chosen video when there is one, otherwise the photo.
+const bgMedia=()=>bgVideo&&bgVideo.readyState>=2?bgVideo:photo;
 function cover(img){
-  const r=Math.max(W/img.naturalWidth,H/img.naturalHeight),w=img.naturalWidth*r,h=img.naturalHeight*r;
+  const r=Math.max(W/mw(img),H/mh(img)),w=mw(img)*r,h=mh(img)*r;
   ctx.drawImage(img,(W-w)/2,(H-h)/2,w,h);
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(0,0,0,.28)');g.addColorStop(.3,'rgba(0,0,0,0)');g.addColorStop(.6,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.42)');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -448,7 +451,7 @@ function arcText(str,r,top,font,c){
   chars.forEach((ch,i)=>{const da=ws[i]/r,m=top?a+da/2:a-da/2;ctx.save();ctx.translate(r*Math.cos(m),r*Math.sin(m));ctx.rotate(top?m+Math.PI/2:m-Math.PI/2);ctx.fillText(ch,0,0);ctx.restore();a=top?a+da:a-da});
   ctx.textBaseline='alphabetic';
 }
-function coverRect(img,x,y,w,h){if(!img.naturalWidth)return;const r=Math.max(w/img.naturalWidth,h/img.naturalHeight),iw=img.naturalWidth*r,ih=img.naturalHeight*r;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}
+function coverRect(img,x,y,w,h){if(!mw(img))return;const r=Math.max(w/mw(img),h/mh(img)),iw=mw(img)*r,ih=mh(img)*r;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}
 const myBit=d=>profile?`${((profile.total||0)+d.km).toFixed(1)} KM WITH FLATTO`:null;
 function storyBits(d){const b=[];if(myBit(d))b.push(myBit(d));if(d.tier)b.push(d.tier);return b}
 
@@ -484,7 +487,7 @@ function draw(){
   $('paceOut').textContent=d.pace;
   ctx.clearRect(0,0,W,H);
   const now=new Date(),ds=[now.getDate(),now.getMonth()+1].map(n=>String(n).padStart(2,'0')).join('.')+'.'+String(now.getFullYear()).slice(2),hm=now.toTimeString().slice(0,5);
-  if(st.endsWith('polaroid')){ctx.fillStyle=c==='#FFFFFF'?'#F4EEDC':c;ctx.fillRect(0,0,W,H)}else if(photo.complete&&photo.naturalWidth)cover(photo);
+  if(st.endsWith('polaroid')){ctx.fillStyle=c==='#FFFFFF'?'#F4EEDC':c;ctx.fillRect(0,0,W,H)}else if(mw(bgMedia()))cover(bgMedia());
   ctx.shadowColor=c==='#4C2F31'?'rgba(255,255,255,.25)':'rgba(0,0,0,.35)';ctx.shadowBlur=18;
   if(st==='classic'){
     drawMascot(W/2,120,520);
@@ -532,7 +535,7 @@ function draw(){
     ctx.shadowBlur=0;ctx.shadowColor='transparent';const ink=c==='#4C2F31'?'#F4EEDC':'#4C2F31';
     ctx.save();ctx.translate(W/2,830);ctx.rotate(-.05);ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=40;ctx.shadowOffsetY=14;
     ctx.fillStyle='#FFFFFF';ctx.fillRect(-410,-520,820,1020);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-    coverRect(photo,-370,-480,740,780);
+    coverRect(bgMedia(),-370,-480,740,780);
     ctx.font='96px Yellowtail';ctx.fillStyle='#4C2F31';ctx.textAlign='center';ctx.fillText(`${d.dist} km, then coffee`,0,420);
     ctx.restore();
     drawMascot(W-240,150,380);
@@ -558,7 +561,7 @@ function draw(){
     ctx.shadowBlur=0;ctx.shadowColor='transparent';const ink=c==='#4C2F31'?'#F4EEDC':'#4C2F31';
     ctx.save();ctx.translate(W/2,830);ctx.rotate(-.05);ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=40;ctx.shadowOffsetY=14;
     ctx.fillStyle='#FFFFFF';ctx.fillRect(-410,-520,820,1020);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-    coverRect(photo,-370,-480,740,780);
+    coverRect(bgMedia(),-370,-480,740,780);
     ctx.font='96px Yellowtail';ctx.fillStyle='#4C2F31';ctx.textAlign='center';ctx.fillText('ran it. coffee now.',0,420);
     ctx.restore();
     drawMascot(W-240,150,380);
@@ -587,7 +590,7 @@ function draw(){
     ctx.shadowBlur=0;ctx.shadowColor='transparent';const ink=c==='#4C2F31'?'#F4EEDC':'#4C2F31',drink=val('drink').toLowerCase();
     ctx.save();ctx.translate(W/2,830);ctx.rotate(-.05);ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=40;ctx.shadowOffsetY=14;
     ctx.fillStyle='#FFFFFF';ctx.fillRect(-410,-520,820,1020);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-    coverRect(photo,-370,-480,740,780);
+    coverRect(bgMedia(),-370,-480,740,780);
     ctx.font='96px Yellowtail';ctx.fillStyle='#4C2F31';ctx.textAlign='center';ctx.fillText(`${drink} o'clock`,0,420);
     ctx.restore();
     drawMascot(W-240,150,380);
@@ -595,7 +598,7 @@ function draw(){
     scriptLogo(W/2,1660,130,ink);text(HANDLE,W/2,1750,'800 36px Inter',ink,'center',3);
   }
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
-  queueBlob();
+  if(!bgVideo)queueBlob();
 }
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const MODES={run:['big','receipt','stamp','tee','mascot','polaroid','classic','bib'],coffee:['c-receipt','c-stamp','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
@@ -609,15 +612,43 @@ let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventList
 
 /* ---------- share ---------- */
 // The story PNG is prepared after every redraw, so the tap on Share opens the share sheet right away (Safari needs that).
-let readyBlob=null,blobTimer=null;
+let readyBlob=null,blobTimer=null,bgVideo=null,readyVideo=null,videoKey='',rendering=false;
 function queueBlob(){readyBlob=null;clearTimeout(blobTimer);blobTimer=setTimeout(()=>cv.toBlob(b=>{readyBlob=b},'image/png'),120)}
 // Instagram can't be told to tag an account, so the handle is copied on its own tap; Aa > Paste in the story makes it a mention.
 $('copyTag').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(HANDLE);$('copyTag').textContent='✓ @flatto.bali copied';$('copyTag').classList.add('copied')}
   catch(e){say('Copying is blocked here. In your story, type @flatto.bali in Aa.')}
 });
+// Video stories are recorded from the live canvas (max 15 s, muted), then shared on a second tap: Safari only opens the share sheet straight from a tap.
+const stateKey=()=>JSON.stringify([data(),STYLES[styleIdx],val('color'),$('mascot').checked,val('drink'),val('mode')]);
+async function renderVideo(){
+  const mime=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t));
+  if(!mime||!cv.captureStream){say("This browser can't make videos. Use a photo instead.");return}
+  rendering=true;$('share').textContent='Making your video…';
+  const dur=Math.min(15,isFinite(bgVideo.duration)?bgVideo.duration:10);
+  bgVideo.loop=false;bgVideo.currentTime=0;await bgVideo.play().catch(()=>{});
+  const rec=new MediaRecorder(cv.captureStream(30),{mimeType:mime,videoBitsPerSecond:8e6}),chunks=[];
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  const done=new Promise(r=>rec.onstop=r);rec.start(250);
+  const t0=performance.now(),tick=setInterval(()=>say(`Making your video… ${Math.max(0,Math.ceil(dur-(performance.now()-t0)/1000))} s`),500);
+  await new Promise(r=>{const end=()=>r();bgVideo.addEventListener('ended',end,{once:true});setTimeout(end,dur*1000)});
+  rec.stop();await done;clearInterval(tick);
+  const type=mime.split(';')[0];
+  readyVideo=new File([new Blob(chunks,{type})],'flatto-run.'+(type==='video/mp4'?'mp4':'webm'),{type});videoKey=stateKey();
+  bgVideo.loop=true;bgVideo.play().catch(()=>{});rendering=false;
+  $('share').textContent='▶ Share video to Instagram';say('Video ready. Tap Share to post it.');
+}
 $('share').addEventListener('click',()=>{
   const d=data(),coffee=val('mode')==='coffee';
+  if(bgVideo){
+    if(rendering)return;
+    if(!readyVideo||videoKey!==stateKey()){renderVideo();return}
+    const counted=coffee||recordPost(d);
+    say(counted?'Show your story at the counter.':'Add your email below so your km count.');
+    if(navigator.canShare&&navigator.canShare({files:[readyVideo]}))navigator.share({files:[readyVideo]}).catch(e=>{if(e.name!=='AbortError')say("Sharing didn't open. Try again.")});
+    else say("This browser can't share videos. Try Safari on iPhone.");
+    return;
+  }
   if(!readyBlob){say('One second, your story is getting ready. Tap Share again.');draw();return}
   const file=new File([readyBlob],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'});
   // Count at the tap: once iOS hands off to Instagram, Safari may never hear back from the share sheet.
@@ -630,7 +661,17 @@ $('share').addEventListener('click',()=>{
     say('Press and hold the story below, then Save to Photos and post it from Instagram.');
   }
 });
-$('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const img=new Image();img.onload=()=>{photo=img;$('photoBtn').firstChild.textContent='Change photo';document.querySelector('.cta').classList.add('ready');draw()};img.src=URL.createObjectURL(f)});
+$('photo').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const ready=label=>{$('photoBtn').firstChild.textContent=label;document.querySelector('.cta').classList.add('ready')};
+  if(bgVideo){bgVideo.pause();bgVideo=null}readyVideo=null;$('share').textContent='2 · Share to Instagram';
+  if(f.type.startsWith('video/')){
+    const v=document.createElement('video');v.muted=true;v.playsInline=true;v.loop=true;v.preload='auto';v.src=URL.createObjectURL(f);
+    v.addEventListener('loadeddata',()=>{bgVideo=v;ready('Change photo or video');$('share').textContent='2 · Make my video';v.play().catch(()=>{});(function loop(){if(bgVideo!==v)return;draw();requestAnimationFrame(loop)})()},{once:true});
+    v.load();return;
+  }
+  const img=new Image();img.onload=()=>{photo=img;ready('Change photo or video');draw()};img.src=URL.createObjectURL(f);
+});
 document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',()=>{if(['dist','time'].includes(i.id)){runName='Your run';runId=null}draw()})});
 photo.onload=draw;mascot.onload=draw;
 setStyle(0);
