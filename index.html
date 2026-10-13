@@ -100,6 +100,9 @@ input[type=email]{background:var(--bg);color:var(--fg);border:1px solid var(--li
 .mode{justify-content:center}
 .mode .chip span{padding:10px 20px;font-size:14px}
 button.copied{border-color:#8FD19E;color:#8FD19E}
+.mebtns{display:flex;flex-direction:column;gap:6px}
+.mebtns .ghost{padding:8px 10px}
+input[readonly]{opacity:.6}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -180,7 +183,7 @@ a{color:var(--sky)}
     <div class="mecard" id="meCard" hidden>
       <div><b id="meTotal">0.0</b><span>KM WITH FLATTO</span></div>
       <p id="meHello"></p>
-      <button class="ghost" id="notMe" type="button">Not you?</button>
+      <div class="mebtns"><button class="ghost" id="editMe" type="button">Edit</button><button class="ghost" id="notMe" type="button">Not you?</button></div>
     </div>
     <form class="join" id="join" novalidate>
       <p class="hint" style="margin:0"><b>Count your km with Flatto.</b> Just your email, no password. Already ran with us? Your total comes back.</p>
@@ -193,6 +196,7 @@ a{color:var(--sky)}
       </div>
       <p class="err" id="joinErr" role="alert"></p>
       <button type="submit" id="joinGo">Continue</button>
+      <button type="button" class="ghost wide" id="cancelEdit" hidden>Cancel</button>
     </form>
   </section>
 </div>
@@ -336,7 +340,9 @@ function setProfile(p){
   if(p){$('num').value=(p.runs||0)+1}
   renderMe();draw();showBoard();
 }
+let editing=false;
 function renderMe(){
+  if(editing)return;
   $('meCard').hidden=!profile;$('join').hidden=!!profile;
   if(!profile)return;
   $('meTotal').textContent=(profile.total||0).toFixed(1);
@@ -351,6 +357,12 @@ $('join').addEventListener('submit',async e=>{
   const email=$('email').value.trim().toLowerCase();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('joinErr').textContent='That email looks off. Check it and try again.';return}
   try{
+    if(editing){
+      const first=$('first').value.trim(),last=$('last').value.trim(),insta=cleanInsta($('insta').value),optin=$('optin').checked;
+      if(!first){$('joinErr').textContent='Add your first name.';return}
+      if(DB_LIVE)await rpc('join_runner',{p_first:first,p_last:last,p_email:profile.email,p_instagram:insta,p_optin:optin});
+      closeEdit();setProfile({...profile,first,last,insta,optin});say('Profile updated.');return;
+    }
     if($('newFields').hidden){
       const found=await findRunner(email);
       if(found){setProfile(found);say(`Welcome back, ${found.first}. ${found.total.toFixed(1)} km with Flatto so far.`);return}
@@ -363,6 +375,16 @@ $('join').addEventListener('submit',async e=>{
     setProfile(p);$('newFields').hidden=true;$('joinGo').textContent='Continue';say(`You're in, ${first}. Every story you post adds your km.`);
   }catch(err){$('joinErr').textContent="That didn't go through. Try again in a moment."}
 });
+function closeEdit(){
+  editing=false;$('email').readOnly=false;$('email').value='';$('newFields').hidden=true;$('cancelEdit').hidden=true;$('joinGo').textContent='Continue';
+  ['first','last','insta'].forEach(k=>$(k).value='');renderMe();
+}
+$('editMe').addEventListener('click',()=>{
+  editing=true;$('meCard').hidden=true;$('join').hidden=false;$('newFields').hidden=false;$('cancelEdit').hidden=false;
+  $('email').value=profile.email;$('email').readOnly=true;$('first').value=profile.first||'';$('last').value=profile.last||'';
+  $('insta').value=profile.insta?'@'+profile.insta:'';$('optin').checked=profile.optin!==false;$('joinGo').textContent='Save';$('insta').focus();
+});
+$('cancelEdit').addEventListener('click',closeEdit);
 $('notMe').addEventListener('click',()=>{setProfile(null);$('email').value='';$('email').focus()});
 document.querySelectorAll('input[name=period]').forEach(i=>i.addEventListener('change',showBoard));
 // A profile made before the database was live has no id: find it by email, or register it, before counting anything.
