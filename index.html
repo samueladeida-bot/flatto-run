@@ -92,6 +92,11 @@ input[type=email]{background:var(--bg);color:var(--fg);border:1px solid var(--li
 .stats input{all:unset;font-family:var(--display);font-size:32px;line-height:1.1;color:var(--fg);width:100%;font-variant-numeric:tabular-nums}
 .stats b{font-family:var(--display);font-weight:400;font-size:32px;line-height:1.1;color:var(--muted)}
 .stats span{font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:800}
+.mecard{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-top:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--sky);background:var(--bg)}
+.mecard b{display:block;font-family:var(--display);font-weight:400;font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.mecard span{font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:800}
+.mecard p{margin:0;font-size:13px;color:var(--muted);min-width:0}
+.join{margin-top:12px}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -147,15 +152,22 @@ a{color:var(--sky)}
     </div>
     <p class="hint" id="boardNote">Ranked by distance, not speed. Every story you post adds your km.</p>
     <ol class="rank" id="rank"></ol>
-    <button class="ghost wide" id="joinBtn" type="button">Join the leaderboard</button>
-    <form class="join" id="join" hidden novalidate>
-      <div class="two"><label for="first">First name<input id="first" type="text" autocomplete="given-name" required></label>
-      <label for="last">Last name<input id="last" type="text" autocomplete="family-name" required></label></div>
+    <div class="mecard" id="meCard" hidden>
+      <div><b id="meTotal">0.0</b><span>KM WITH FLATTO</span></div>
+      <p id="meHello"></p>
+      <button class="ghost" id="notMe" type="button">Not you?</button>
+    </div>
+    <form class="join" id="join" novalidate>
+      <p class="hint" style="margin:0"><b>Count your km with Flatto.</b> Just your email, no password. Already ran with us? Your total comes back.</p>
       <label for="email">Email<input id="email" type="email" autocomplete="email" inputmode="email" required></label>
-      <label for="insta">Instagram (optional)<input id="insta" type="text" autocapitalize="off" spellcheck="false" placeholder="@yourname"></label>
-      <label class="check" for="optin"><input id="optin" type="checkbox" checked> Flatto may email me about runs and events</label>
+      <div class="join" id="newFields" hidden>
+        <div class="two"><label for="first">First name<input id="first" type="text" autocomplete="given-name"></label>
+        <label for="last">Last name<input id="last" type="text" autocomplete="family-name"></label></div>
+        <label for="insta">Instagram (optional)<input id="insta" type="text" autocapitalize="off" spellcheck="false" placeholder="@yourname"></label>
+        <label class="check" for="optin"><input id="optin" type="checkbox" checked> Flatto may email me about runs and events</label>
+      </div>
       <p class="err" id="joinErr" role="alert"></p>
-      <button type="submit">Join</button>
+      <button type="submit" id="joinGo">Continue</button>
     </form>
   </section>
 </div>
@@ -291,24 +303,49 @@ async function showBoard(){
     });
     if(!DB_LIVE){const li=document.createElement('li');li.className='ex';li.textContent='EXAMPLE RUNNERS · LIVE BOARD COMING SOON';ol.appendChild(li)}
   }catch(e){ol.innerHTML='';$('boardNote').textContent="The leaderboard didn't load. Try again later."}
-  $('joinBtn').hidden=!!profile;
-}
-$('joinBtn').addEventListener('click',()=>{$('join').hidden=false;$('joinBtn').hidden=true;$('first').focus()});
-$('join').addEventListener('submit',async e=>{
-  e.preventDefault();const first=$('first').value.trim(),last=$('last').value.trim(),email=$('email').value.trim().toLowerCase();
-  if(!first||!last){$('joinErr').textContent='Add your first and last name.';return}
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('joinErr').textContent='That email looks off. Check it and try again.';return}
-  const p={first,last,email,insta:cleanInsta($('insta').value),optin:$('optin').checked};
-  if(DB_LIVE){
-    const r=await fetch(`${DB.url}/rest/v1/rpc/join_runner`,{method:'POST',headers:{apikey:DB.key,Authorization:'Bearer '+DB.key,'Content-Type':'application/json'},body:JSON.stringify({p_first:first,p_last:last,p_email:email,p_instagram:p.insta,p_optin:p.optin})});
-    if(!r.ok){$('joinErr').textContent="Couldn't join right now. Try again in a moment.";return}
-    p.id=await r.json();
   }
-  profile=p;store.set('flattoProfile',p);$('join').hidden=true;$('joinErr').textContent='';say(`You're on the board, ${first}. Your next story adds your km.`);showBoard();
+async function rpc(name,body){
+  const r=await fetch(`${DB.url}/rest/v1/rpc/${name}`,{method:'POST',headers:{apikey:DB.key,Authorization:'Bearer '+DB.key,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok)throw new Error(name);return r.json();
+}
+function setProfile(p){
+  profile=p;store.set('flattoProfile',p);
+  if(p&&p.email)store.set('flattoProfiles',{...store.get('flattoProfiles',{}),[p.email]:p});
+  if(p){$('num').value=(p.runs||0)+1}
+  renderMe();draw();showBoard();
+}
+function renderMe(){
+  $('meCard').hidden=!profile;$('join').hidden=!!profile;
+  if(!profile)return;
+  $('meTotal').textContent=(profile.total||0).toFixed(1);
+  $('meHello').textContent=`Hi ${profile.first}. Next story is run #${(profile.runs||0)+1}.`;
+}
+async function findRunner(email){
+  if(DB_LIVE){const rows=await rpc('runner_by_email',{p_email:email});const x=rows[0];return x?{id:x.id,first:x.first_name,last:x.last_name,insta:x.instagram||'',email,total:+x.total_km,runs:+x.runs}:null}
+  return store.get('flattoProfiles',{})[email]||null;
+}
+$('join').addEventListener('submit',async e=>{
+  e.preventDefault();$('joinErr').textContent='';
+  const email=$('email').value.trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('joinErr').textContent='That email looks off. Check it and try again.';return}
+  try{
+    if($('newFields').hidden){
+      const found=await findRunner(email);
+      if(found){setProfile(found);say(`Welcome back, ${found.first}. ${found.total.toFixed(1)} km with Flatto so far.`);return}
+      $('newFields').hidden=false;$('joinGo').textContent='Join';$('first').focus();return;
+    }
+    const first=$('first').value.trim(),last=$('last').value.trim();
+    if(!first||!last){$('joinErr').textContent='Add your first and last name.';return}
+    const p={first,last,email,insta:cleanInsta($('insta').value),optin:$('optin').checked,total:0,runs:store.get('flattoRuns',0)};
+    if(DB_LIVE){p.id=await rpc('join_runner',{p_first:first,p_last:last,p_email:email,p_instagram:p.insta,p_optin:p.optin});p.runs=0}
+    setProfile(p);$('newFields').hidden=true;$('joinGo').textContent='Continue';say(`You're in, ${first}. Every story you post adds your km.`);
+  }catch(err){$('joinErr').textContent="That didn't go through. Try again in a moment."}
 });
+$('notMe').addEventListener('click',()=>{setProfile(null);$('email').value='';$('email').focus()});
 document.querySelectorAll('input[name=period]').forEach(i=>i.addEventListener('change',showBoard));
 async function addToBoard(d,id){
   if(!profile)return;
+  profile.total=(profile.total||0)+d.km;profile.runs=(profile.runs||0)+1;store.set('flattoProfile',profile);store.set('flattoProfiles',{...store.get('flattoProfiles',{}),[profile.email]:profile});$('num').value=profile.runs+1;renderMe();
   store.set('flattoKm-'+month,store.get('flattoKm-'+month,0)+d.km);store.set('flattoKmAll',store.get('flattoKmAll',0)+d.km);
   if(DB_LIVE){try{await fetch(`${DB.url}/rest/v1/rpc/add_run`,{method:'POST',headers:{apikey:DB.key,Authorization:'Bearer '+DB.key,'Content-Type':'application/json'},body:JSON.stringify({p_runner:profile.id,p_email:profile.email,p_run_key:id,p_km:d.km,p_month:month})})}catch(e){}}
   showBoard();
@@ -331,7 +368,7 @@ function text(s,x,y,font,c,align='center',ls=0){ctx.font=font;ctx.fillStyle=c;ct
 function drawMascot(cx,y,w){if(!$('mascot').checked||!mascot.naturalWidth)return;const h=w*mascot.naturalHeight/mascot.naturalWidth;ctx.save();ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=20;ctx.translate(cx,y+h/2);ctx.rotate(-.05);ctx.drawImage(mascot,-w/2,-h/2,w,h);ctx.restore()}
 function footer(y,c,d){
   text(HANDLE,W/2,y,'800 36px Inter',c,'center',3);
-  const bits=[];if(d.tier)bits.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)bits.push(`CREW · ${Math.round((crewM+(d.km*1000))/1000).toLocaleString('en-US')} KM IN ${monthName}`);
+  const bits=crewBits(d);
   bits.forEach((b,i)=>text(b,W/2,y+58+i*48,'800 28px Inter',c,'center',4));
 }
 
@@ -347,7 +384,8 @@ function arcText(str,r,top,font,c){
   ctx.textBaseline='alphabetic';
 }
 function coverRect(img,x,y,w,h){if(!img.naturalWidth)return;const r=Math.max(w/img.naturalWidth,h/img.naturalHeight),iw=img.naturalWidth*r,ih=img.naturalHeight*r;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}
-function crewBits(d){const b=[];if(d.tier)b.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)b.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);return b}
+const myBit=d=>profile?`${((profile.total||0)+d.km).toFixed(1)} KM WITH FLATTO`:null;
+function crewBits(d){const b=[];if(myBit(d))b.push(myBit(d));if(d.tier)b.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)b.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);return b}
 
 function draw(){
   const d=data(),c=val('color'),st=STYLES[styleIdx];level();
@@ -368,7 +406,7 @@ function draw(){
     text(d.dist,76,1500,'400 420px Anton',c,'left');text('KM',76+bw+20,1500,'400 120px Anton',c,'left');
     ctx.fillStyle=c;ctx.fillRect(80,1560,W-160,6);
     text(d.pace+' /KM',80,1650,'800 48px Inter',c,'left',2);text(d.time,W/2,1650,'800 48px Inter',c,'center',2);text('RUN #'+d.num,W-80,1650,'800 48px Inter',c,'right',2);
-    const bits=[];if(d.tier)bits.push(d.tier);if(crewM!=null&&crewM+d.km*1000>=CREW_MIN)bits.push(`CREW · ${Math.round((crewM+d.km*1000)/1000).toLocaleString('en-US')} KM IN ${monthName}`);
+    const bits=crewBits(d);
     text(bits.join('  ·  '),80,1730,'800 26px Inter',c,'left',3);
   }else if(st==='bib'){
     drawMascot(W/2,500,560);
@@ -391,7 +429,7 @@ function draw(){
     [['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]].forEach(([l,v],i)=>{text(l,L,y+420+i*64,`400 34px ${mono}`,ink,'left');text(v,R,y+420+i*64,`700 34px ${mono}`,ink,'right')});
     dash(y+660);
     text('TOTAL',L,y+735,`700 40px ${mono}`,ink,'left');text('1 FLAT WHITE',R,y+735,`700 40px ${mono}`,ink,'right');
-    text(d.tier||'THANK YOU, RUNNER',W/2,y+795,`400 26px ${mono}`,ink,'center',3);
+    text(myBit(d)||d.tier||'THANK YOU, RUNNER',W/2,y+795,`400 26px ${mono}`,ink,'center',3);
     ctx.fillStyle=ink;let bx=L+20,seed=Math.round(d.km*100)+d.n*7;while(bx<R-20){seed=(seed*9301+49297)%233280;const bw=2+Math.floor(seed/233280*7);ctx.fillRect(bx,y+830,bw,96);bx+=bw+3+(seed%5)}
     text(HANDLE,W/2,y+985,`700 30px ${mono}`,ink,'center',3);
     drawMascot(x+w-150,y-200,440);
@@ -442,7 +480,7 @@ $('share').addEventListener('click',()=>{
   cv.toBlob(async b=>{
     const file=new File([b],'flatto-run.png',{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
-      try{await navigator.share({files:[file]});say(profile?'Posted? Show it at the counter.':'Posted? Join the leaderboard below to count your km.');addToCrew(d)}
+      try{await navigator.share({files:[file]});say(profile?'Posted? Show it at the counter.':'Posted? Add your email below to count your km.');addToCrew(d)}
       catch(e){if(e.name!=='AbortError')say("Sharing didn't open. Press and hold the story below to save it.")}
     }else{
       const out=$('out');out.src=URL.createObjectURL(b);out.hidden=false;addToCrew(d);
@@ -455,7 +493,7 @@ document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec
 photo.onload=draw;mascot.onload=draw;
 setStyle(0);
 Promise.all(['140px Yellowtail','400px Anton','300px "Archivo Black"','800 40px Inter','600 30px Inter','700 40px "Space Mono"','400 30px "Space Mono"'].map(f=>document.fonts.load(f))).finally(draw);
-loadCrew();showBoard();
+loadCrew();if(profile)$('num').value=(profile.runs||0)+1;renderMe();showBoard();
 </script>
 </body>
 </html>
