@@ -147,8 +147,12 @@ a{color:var(--sky)}
   </div>
 
   <section id="board">
-    <div class="runline"><h2 style="margin:0">Leaderboard</h2>
-      <div class="chips small"><label class="chip"><input type="radio" name="period" value="month" checked><span id="monthTab">This month</span></label><label class="chip"><input type="radio" name="period" value="all"><span>All time</span></label></div>
+    <h2>Leaderboard</h2>
+    <div class="chips small" role="radiogroup" aria-label="Period">
+      <label class="chip"><input type="radio" name="period" value="day"><span>Today</span></label>
+      <label class="chip"><input type="radio" name="period" value="week"><span>Week</span></label>
+      <label class="chip"><input type="radio" name="period" value="month" checked><span>Month</span></label>
+      <label class="chip"><input type="radio" name="period" value="all"><span>All time</span></label>
     </div>
     <p class="hint" id="boardNote">Ranked by distance, not speed. Every story you post adds your km.</p>
     <ol class="rank" id="rank"></ol>
@@ -280,14 +284,22 @@ const DB={url:'SUPABASE_URL',key:'SUPABASE_ANON_KEY'},DB_LIVE=!DB.url.startsWith
 const EXAMPLES=[['Maya','R','maya.runs',112.4],['Tom','B','tom.b',84.1],['Ketut','W','',61.0],['Lena','S','lenaruns',47.5],['Jules','M','',33.2]];
 let profile=store.get('flattoProfile',null);
 const cleanInsta=v=>v.trim().replace(/^@+/,'').replace(/[^a-zA-Z0-9._]/g,'').slice(0,30);
-$('monthTab').textContent=new Date().toLocaleDateString('en-GB',{month:'long'});
+// Period starts in Bali time (UTC+8), weeks from Monday.
+function periodStart(period){
+  if(period==='all')return 0;
+  const off=8*3600e3,b=new Date(Date.now()+off);b.setUTCHours(0,0,0,0);
+  if(period==='week')b.setUTCDate(b.getUTCDate()-((b.getUTCDay()+6)%7));
+  if(period==='month')b.setUTCDate(1);
+  return b.getTime()-off;
+}
 async function fetchBoard(period){
   if(DB_LIVE){
-    const r=await fetch(`${DB.url}/rest/v1/rpc/leaderboard`,{method:'POST',headers:{apikey:DB.key,Authorization:'Bearer '+DB.key,'Content-Type':'application/json'},body:JSON.stringify({period,month_key:month})});
+    const r=await fetch(`${DB.url}/rest/v1/rpc/leaderboard`,{method:'POST',headers:{apikey:DB.key,Authorization:'Bearer '+DB.key,'Content-Type':'application/json'},body:JSON.stringify({period})});
     if(!r.ok)throw new Error('board');return (await r.json()).map(x=>({first:x.first_name,last:x.last_initial||'',insta:x.instagram,km:+x.km,me:profile&&x.runner_id===profile.id}));
   }
-  const rows=EXAMPLES.map(([first,last,insta,km])=>({first,last,insta,km,example:true}));
-  if(profile){const mine=store.get(period==='month'?'flattoKm-'+month:'flattoKmAll',0);if(mine>0)rows.push({first:profile.first,last:(profile.last||'')[0]||'',insta:profile.insta,km:mine,me:true})}
+  const scale={day:.09,week:.3,month:1,all:2.7}[period];
+  const rows=EXAMPLES.map(([first,last,insta,km])=>({first,last,insta,km:Math.round(km*scale*10)/10,example:true}));
+  if(profile){const from=periodStart(period),mine=store.get('flattoLog',[]).filter(r=>r.email===profile.email&&r.t>=from).reduce((a,r)=>a+r.km,0);if(mine>0)rows.push({first:profile.first,last:(profile.last||'')[0]||'',insta:profile.insta,km:mine,me:true})}
   return rows.sort((a,b)=>b.km-a.km);
 }
 async function showBoard(){
@@ -318,7 +330,7 @@ function renderMe(){
   $('meCard').hidden=!profile;$('join').hidden=!!profile;
   if(!profile)return;
   $('meTotal').textContent=(profile.total||0).toFixed(1);
-  $('meHello').textContent=`Hi ${profile.first}. Next story is run #${(profile.runs||0)+1}.`;
+  $('meHello').textContent=`Hi ${profile.first} · run #${(profile.runs||0)+1} next`;
 }
 async function findRunner(email){
   if(DB_LIVE){const rows=await rpc('runner_by_email',{p_email:email});const x=rows[0];return x?{id:x.id,first:x.first_name,last:x.last_name||'',insta:x.instagram||'',email,total:+x.total_km,runs:+x.runs}:null}
@@ -346,7 +358,7 @@ document.querySelectorAll('input[name=period]').forEach(i=>i.addEventListener('c
 async function addToBoard(d,id){
   if(!profile)return;
   profile.total=(profile.total||0)+d.km;profile.runs=(profile.runs||0)+1;store.set('flattoProfile',profile);store.set('flattoProfiles',{...store.get('flattoProfiles',{}),[profile.email]:profile});$('num').value=profile.runs+1;renderMe();
-  store.set('flattoKm-'+month,store.get('flattoKm-'+month,0)+d.km);store.set('flattoKmAll',store.get('flattoKmAll',0)+d.km);
+  store.set('flattoLog',[...store.get('flattoLog',[]),{t:Date.now(),km:d.km,email:profile.email}].slice(-500));
   if(DB_LIVE){try{await fetch(`${DB.url}/rest/v1/rpc/add_run`,{method:'POST',headers:{apikey:DB.key,Authorization:'Bearer '+DB.key,'Content-Type':'application/json'},body:JSON.stringify({p_runner:profile.id,p_email:profile.email,p_run_key:id,p_km:d.km,p_month:month})})}catch(e){}}
   showBoard();
 }
