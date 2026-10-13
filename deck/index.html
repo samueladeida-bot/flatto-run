@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flatto Run Club</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&family=Anton&family=Archivo+Black&family=Inter:wght@500;600;800&display=swap">
+<style>
+/* Layout: the deck is an Instagram story — full-screen 9:16 frames, progress bars on top, tap right/left to move. */
+:root{
+  --plum:#4C2F31; --plum-deep:#2B1A1C; --sky:#CFE3F3; --ecru:#F4EEDC; --ink:#141012; --muted:#B9A79C;
+  --display:Anton, Impact, "Arial Narrow", sans-serif;
+  --script:Yellowtail, "Brush Script MT", cursive;
+  --outline:"Archivo Black", "Arial Black", sans-serif;
+  --body:Inter, -apple-system, system-ui, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none}
+.deck{position:relative;height:100%;width:min(100vw,calc(100vh * 9 / 16));margin:0 auto;overflow:hidden;background:var(--ink)}
+.bars{position:absolute;z-index:10;left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;gap:4px}
+.bars i{flex:1;height:3px;border-radius:3px;background:rgba(244,238,220,.3);overflow:hidden}
+.bars i b{display:block;height:100%;width:0;background:var(--ecru)}
+.bars i.done b{width:100%}
+.bars i.now b{width:100%;transition:width .4s}
+.deck.light .bars i{background:rgba(76,47,49,.25)}.deck.light .bars i b{background:var(--plum)}.deck.light .brand,.deck.light .hint{color:var(--plum)}
+.brand{position:absolute;z-index:10;left:16px;top:calc(env(safe-area-inset-top,0px) + 22px);display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.brand .av{width:30px;height:30px;border-radius:50%;background:var(--sky);color:var(--plum);display:grid;place-items:center;font-family:var(--script);font-size:18px}
+.brand em{font-style:normal;opacity:.6;font-weight:500}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:90px 26px 40px;opacity:0;pointer-events:none;transition:opacity .35s}
+.slide.on{opacity:1;pointer-events:auto}
+.tap{position:absolute;z-index:5;top:0;bottom:0;width:35%}
+.tap.l{left:0}.tap.r{right:0;width:65%}
+.hint{position:absolute;z-index:6;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);left:0;right:0;text-align:center;font-size:11px;letter-spacing:2px;opacity:.5}
+
+/* type */
+.script{font-family:var(--script);font-weight:400;line-height:.9}
+.anton{font-family:var(--display);font-weight:400;line-height:.92;text-transform:uppercase;letter-spacing:.5px}
+.outline{font-family:var(--outline);color:transparent;-webkit-text-stroke:1.5px currentColor;line-height:.95}
+.kick{font-size:11px;letter-spacing:4px;font-weight:800;opacity:.7;text-transform:uppercase}
+.lead{font-size:16px;line-height:1.45;opacity:.85}
+.foot{font-size:11px;opacity:.55;letter-spacing:.5px;line-height:1.5}
+
+/* enter animations: children with .up rise in, staggered by --d */
+.slide .up{opacity:0;transform:translateY(18px)}
+.slide.on .up{animation:up .6s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--d,0) * 120ms + 100ms)}
+@keyframes up{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.slide .up,.slide.on .up{opacity:1;transform:none;animation:none}.marquee .track{animation:none!important}}
+
+/* 1 cover */
+.s1{background:var(--plum)}
+.s1 .story{position:absolute;width:42%;border-radius:14px;box-shadow:0 20px 40px rgba(0,0,0,.45)}
+.s1 .a{right:4%;top:11%;transform:rotate(7deg)}
+.s1 .b{left:6%;top:14%;transform:rotate(-6deg)}
+.s1 .copy{position:relative;z-index:2;margin-top:auto;padding-top:40px;background:linear-gradient(180deg,rgba(76,47,49,0),var(--plum) 30%)}
+.s1 .script{font-size:86px;color:var(--sky)}
+
+/* 2 statement */
+.s2{background:var(--sky);color:var(--plum)}
+.s2 .anton{font-size:64px}
+
+/* 3 steps */
+.s3{background:var(--ink)}
+.steps{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+.step{display:grid;grid-template-columns:54px 1fr;gap:14px;align-items:center;padding:14px;border-radius:16px;background:#221B1D;border:1px solid #3A3134}
+.step b{font-family:var(--display);font-weight:400;font-size:40px;color:var(--sky);text-align:center}
+.step h3{font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:.5px}
+.step p{font-size:13px;opacity:.75;margin-top:2px;line-height:1.4}
+.ten{align-self:flex-end;margin-top:18px;transform:rotate(-6deg);border:3px solid var(--ecru);border-radius:50%;width:116px;height:116px;display:grid;place-items:center;text-align:center}
+.ten span{font-family:var(--display);font-size:34px;line-height:.9}
+.ten small{display:block;font-size:10px;letter-spacing:2px;font-weight:800}
+
+/* 4 marquee */
+.s4{background:var(--ecru);color:var(--plum);padding-left:0;padding-right:0}
+.s4 .head{padding:0 26px}
+.marquee{overflow:hidden;margin-top:22px}
+.track{display:flex;gap:12px;width:max-content;animation:slide 26s linear infinite}
+.track img{width:44vw;max-width:210px;border-radius:12px;box-shadow:0 10px 24px rgba(76,47,49,.25)}
+.marquee.rev .track{animation-direction:reverse;animation-duration:30s}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* 5 duo */
+.s5{background:var(--plum)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.duo figure{display:flex;flex-direction:column;gap:8px}
+.duo img{width:100%;border-radius:12px}
+.duo figcaption{font-family:var(--display);font-size:18px;letter-spacing:.5px;text-transform:uppercase}
+.duo figcaption small{display:block;font-family:var(--body);font-size:12px;letter-spacing:0;text-transform:none;opacity:.75;margin-top:2px}
+
+/* 6 leaderboard */
+.s6{background:var(--ink)}
+.chips{display:flex;gap:6px;margin:14px 0 10px;flex-wrap:wrap}
+.chips span{font-size:11px;font-weight:800;letter-spacing:1.5px;padding:6px 10px;border-radius:999px;border:1px solid #3A3134}
+.chips span.on{background:var(--ecru);color:var(--ink)}
+.rank{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+.rank li{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:#221B1D;font-size:13px}
+.rank .n{font-family:var(--display);font-size:18px;opacity:.6}
+.rank li:first-child .n{opacity:1;color:var(--sky)}
+.rank em{display:block;font-style:normal;font-size:11px;color:var(--sky)}
+.rank .km{font-family:var(--display);font-size:20px}
+.uses{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.uses div{padding:10px;border-radius:12px;border:1px solid var(--sky);font-size:11px;line-height:1.35}
+.uses b{display:block;font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:.5px;color:var(--sky);margin-bottom:4px}
+
+/* 7 numbers */
+.s7{background:var(--sky);color:var(--plum)}
+.nums{display:flex;flex-direction:column;gap:18px;margin-top:22px}
+.nums div{border-bottom:2px solid var(--plum);padding-bottom:10px}
+.nums b{font-family:var(--display);font-weight:400;font-size:72px;line-height:.95;font-variant-numeric:tabular-nums}
+.nums span{display:block;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+
+/* 8 next */
+.s8{background:var(--ecru);color:var(--plum)}
+.next{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.next div{background:#fff;border-radius:14px;padding:12px;box-shadow:0 6px 16px rgba(76,47,49,.1)}
+.next b{display:block;font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.5px;line-height:1.05}
+.next p{font-size:11.5px;line-height:1.4;margin-top:4px;opacity:.8}
+
+/* 9 try */
+.s9{background:var(--plum);text-align:center;align-items:center}
+.qr{background:var(--ecru);padding:14px;border-radius:18px;margin:20px 0 14px;width:200px;height:200px;display:grid;place-items:center}
+.qr canvas,.qr img{width:172px!important;height:172px!important}
+.offer{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.offer span{font-family:var(--display);font-size:22px;letter-spacing:.5px}
+.offer span:first-child{font-size:30px;color:var(--sky)}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <div class="bars" id="bars"></div>
+  <div class="brand"><span class="av">F</span>flatto.bali <em>· Run Club</em></div>
+
+  <section class="slide s1">
+    <img class="story a" src="img/receipt.jpg" alt="">
+    <img class="story b" src="img/big.jpg" alt="">
+    <div class="copy">
+      <p class="kick up" style="--d:0">Seseh Run Club · proposal</p>
+      <p class="script up" style="--d:1">Flatto</p>
+      <h1 class="anton up" style="--d:2;font-size:62px;margin-top:10px">Ran it?<br>Post it.</h1>
+      <p class="lead up" style="--d:3;margin-top:12px">Your customers' runs, on Instagram, in Flatto colours.</p>
+    </div>
+  </section>
+
+  <section class="slide s2" data-light>
+    <p class="kick up" style="--d:0">The idea</p>
+    <h2 class="anton up" style="--d:1;margin-top:14px">Seseh already runs.</h2>
+    <h2 class="anton up" style="--d:3;margin-top:18px"><span style="background:var(--plum);color:var(--sky);padding:2px 8px;-webkit-box-decoration-break:clone;box-decoration-break:clone;line-height:1.25">Let's put Flatto on every run.</span></h2>
+    <p class="lead up" style="--d:5;margin-top:22px">Every run becomes a story. Every story shows Flatto to the runner's friends.</p>
+  </section>
+
+  <section class="slide s3">
+    <p class="kick up" style="--d:0">How it works</p>
+    <h2 class="anton up" style="--d:1;font-size:54px;margin-top:10px">Scan. Run.<br>Post.</h2>
+    <div class="steps">
+      <div class="step up" style="--d:2"><b>1</b><div><h3>Scan at the counter</h3><p>A QR on the counter opens the page. No app to install.</p></div></div>
+      <div class="step up" style="--d:3"><b>2</b><div><h3>Add the run</h3><p>A screenshot from Strava, Garmin or Apple Watch, or two numbers typed in.</p></div></div>
+      <div class="step up" style="--d:4"><b>3</b><div><h3>Photo, then Instagram</h3><p>Pick a photo and a style, share as a story with @flatto.bali.</p></div></div>
+    </div>
+    <div class="ten up" style="--d:6"><div><span>10</span><small>SECONDS</small></div></div>
+  </section>
+
+  <section class="slide s4" data-light>
+    <div class="head">
+      <p class="kick up" style="--d:0">The stories</p>
+      <h2 class="anton up" style="--d:1;font-size:56px;margin-top:10px">Pick your vibe.</h2>
+      <p class="lead up" style="--d:2;margin-top:8px">Receipt, stamp, Seseh Club tee, the mascot… all in Flatto colours.</p>
+    </div>
+    <div class="marquee up" style="--d:3"><div class="track" id="trackA"></div></div>
+  </section>
+
+  <section class="slide s5">
+    <p class="kick up" style="--d:0">For everyone</p>
+    <h2 class="anton up" style="--d:1;font-size:50px;margin-top:10px">Not a runner?<br>Still posting.</h2>
+    <div class="duo">
+      <figure class="up" style="--d:2"><img src="img/c-receipt.jpg" alt="Just coffee story"><figcaption>Just coffee<small>Pick a drink, post the vibe.</small></figcaption></figure>
+      <figure class="up" style="--d:3"><img src="img/s-mascot.jpg" alt="Story without numbers"><figcaption>Hide my numbers<small>Ran it, no pace shown.</small></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="slide s6">
+    <p class="kick up" style="--d:0">Leaderboard</p>
+    <h2 class="anton up" style="--d:1;font-size:46px;margin-top:10px">The Flatto board.</h2>
+    <p class="lead up" style="--d:2;margin-top:6px;font-size:14px">Ranked by distance, not speed. Every story adds the km.</p>
+    <div class="chips up" style="--d:3"><span>TODAY</span><span>WEEK</span><span class="on">MONTH</span><span>ALL TIME</span></div>
+    <ol class="rank up" style="--d:4">
+      <li><span class="n">1</span><span>Maya R.<em>@maya.runs</em></span><span class="km">112.4</span></li>
+      <li><span class="n">2</span><span>Tom B.<em>@tom.b</em></span><span class="km">84.1</span></li>
+      <li><span class="n">3</span><span>Ketut W.</span><span class="km">61.0</span></li>
+    </ol>
+    <div class="uses">
+      <div class="up" style="--d:5"><b>Reward</b>Top of the month wins a week of coffee.</div>
+      <div class="up" style="--d:6"><b>Loyalty</b>5, 10, 25 runs unlock perks at the counter.</div>
+      <div class="up" style="--d:7"><b>Spotlight</b>Runner of the week, reposted by @flatto.bali.</div>
+    </div>
+    <p class="foot up" style="--d:8;margin-top:10px">Example names.</p>
+  </section>
+
+  <section class="slide s7" data-light>
+    <p class="kick up" style="--d:0">What it could bring</p>
+    <h2 class="anton up" style="--d:1;font-size:46px;margin-top:10px">Per month, roughly.</h2>
+    <div class="nums">
+      <div class="up" style="--d:2"><b data-to="5000">0</b><span>Story views showing Flatto</span></div>
+      <div class="up" style="--d:3"><b data-to="100">0</b><span>Stories posted</span></div>
+      <div class="up" style="--d:4"><b data-to="40">0</b><span>Runners on the board</span></div>
+    </div>
+    <p class="foot up" style="--d:6;margin-top:16px">Estimates: ~25 stories a week, each seen by 5–10% of a runner's ~500 followers. The free month shows the real numbers.</p>
+  </section>
+
+  <section class="slide s8" data-light>
+    <p class="kick up" style="--d:0">What's next</p>
+    <h2 class="anton up" style="--d:1;font-size:46px;margin-top:10px">It grows with you.</h2>
+    <div class="next">
+      <div class="up" style="--d:2"><b>Google reviews</b><p>A review button after every post. More reviews, higher on Maps.</p></div>
+      <div class="up" style="--d:3"><b>Flatto runs</b><p>Announce the Sunday run, see who's in.</p></div>
+      <div class="up" style="--d:4"><b>Monthly challenges</b><p>100 km in October, 4 Sundays in a row.</p></div>
+      <div class="up" style="--d:5"><b>Seasonal stories</b><p>Halloween run, Christmas run, drink of the month.</p></div>
+      <div class="up" style="--d:6"><b>Runner of the week</b><p>A ready-made story for @flatto.bali every Monday.</p></div>
+      <div class="up" style="--d:7"><b>Brand partners</b><p>A running brand sponsors the monthly prize.</p></div>
+    </div>
+  </section>
+
+  <section class="slide s9">
+    <p class="kick up" style="--d:0">Try it now</p>
+    <h2 class="anton up" style="--d:1;font-size:52px;margin-top:10px">Scan it.</h2>
+    <div class="qr up" style="--d:2" id="qr"></div>
+    <div class="offer">
+      <span class="up" style="--d:3">1 month free</span>
+      <span class="up" style="--d:4">Simple monthly plan after</span>
+    </div>
+    <p class="lead up" style="--d:5;margin-top:14px">Let's look at the real numbers together.</p>
+    <p class="script up" style="--d:6;font-size:44px;color:var(--sky);margin-top:18px">Flatto</p>
+  </section>
+
+  <button class="tap l" id="prev" aria-label="Previous slide"></button>
+  <button class="tap r" id="next" aria-label="Next slide"></button>
+  <p class="hint" id="hint">TAP TO CONTINUE</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const slides=[...document.querySelectorAll('.slide')],bars=document.getElementById('bars');
+const APP='https://samueladeida-bot.github.io/flatto-run/';
+bars.innerHTML=slides.map(()=>'<i><b></b></i>').join('');
+const stories=['big','receipt','stamp','tee','mascot','polaroid','c-polaroid'];
+const t=document.getElementById('trackA');t.innerHTML=[...stories,...stories].map(s=>`<img src="img/${s}.jpg" alt="">`).join('');
+document.querySelectorAll('.tap').forEach(b=>{b.style.background='none';b.style.border='0'});
+let i=0;
+function count(el){const to=+el.dataset.to,t0=performance.now(),dur=1200;const f=n=>{const p=Math.min(1,(n-t0)/dur),v=Math.round(to*(1-Math.pow(1-p,3)));el.textContent=v.toLocaleString('en-US')+(p===1&&to>=1000?'+':'');if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+function go(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,k)=>s.classList.toggle('on',k===i));
+  document.getElementById('deck').classList.toggle('light',slides[i].hasAttribute('data-light'));
+  [...bars.children].forEach((b,k)=>{b.className=k<i?'done':k===i?'now':''});
+  slides[i].querySelectorAll('[data-to]').forEach(el=>setTimeout(()=>count(el),400));
+  document.getElementById('hint').style.display=i===slides.length-1?'none':'';
+  try{history.replaceState(null,'','#'+(i+1))}catch(e){}
+}
+document.getElementById('next').onclick=()=>go(i+1);
+document.getElementById('prev').onclick=()=>go(i-1);
+addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown'].includes(e.key))go(i+1);if(['ArrowLeft','PageUp'].includes(e.key))go(i-1)});
+let sx=null;addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
+addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50){go(i+(dx<0?1:-1));e.preventDefault()}sx=null});
+try{new QRCode(document.getElementById('qr'),{text:APP,width:344,height:344,colorDark:'#4C2F31',colorLight:'#F4EEDC',correctLevel:QRCode.CorrectLevel.M})}catch(e){document.getElementById('qr').textContent=APP}
+go((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body>
+</html>

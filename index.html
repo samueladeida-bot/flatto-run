@@ -103,6 +103,12 @@ button.copied{border-color:#8FD19E;color:#8FD19E}
 .mebtns{display:flex;flex-direction:column;gap:6px}
 .mebtns .ghost{padding:8px 10px}
 input[readonly]{opacity:.6}
+body.render{padding:0;background:#000}
+body.render .wrap{max-width:none;gap:0}
+body.render .wrap>*:not(.stage){display:none!important}
+body.render .stage{max-width:none}
+body.render canvas{width:540px;height:960px;max-width:none;border-radius:0}
+body.render .nav{display:none}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -628,6 +634,17 @@ $('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
 document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',()=>{if(['dist','time'].includes(i.id)){runName='Your run';runId=null}draw()})});
 photo.onload=draw;mascot.onload=draw;
 setStyle(0);
+// ?render=<style>&color=sky|plum&drink=MATCHA&photo=cafe : shows only the story, for marketing shots.
+const RQ=new URLSearchParams(location.search);
+if(RQ.get('render')){
+  document.body.classList.add('render');const st=RQ.get('render');
+  const m=Object.keys(MODES).find(k=>MODES[k].includes(st))||'run';
+  STYLES=MODES[m];styleIdx=Math.max(0,STYLES.indexOf(st));
+  const col={sky:'#CFE3F3',plum:'#4C2F31'}[RQ.get('color')];if(col)document.querySelector(`input[name=color][value="${col}"]`).checked=true;
+  if(RQ.get('drink'))document.querySelector(`input[name=drink][value="${RQ.get('drink')}"]`).checked=true;
+  $('num').value=RQ.get('num')||'7';
+}
+const shot=RQ.get('shot');if(shot)addEventListener('load',()=>setTimeout(()=>{const el=document.getElementById(shot);if(el)el.scrollIntoView({block:'start'})},300));
 Promise.all(['140px Yellowtail','400px Anton','300px "Archivo Black"','800 40px Inter','600 30px Inter','700 40px "Space Mono"','400 30px "Space Mono"'].map(f=>document.fonts.load(f))).finally(draw);
 if(profile)$('num').value=(profile.runs||0)+1;renderMe();showBoard();
 ensureRunner().then(()=>{if(profile&&DB_LIVE)findRunner(profile.email).then(f=>{if(f)setProfile({...profile,...f})})}).catch(()=>{});
