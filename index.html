@@ -15,6 +15,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);margin:0;padding-inline:16px;padding-block:20px 48px}
 .wrap{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
@@ -54,6 +55,27 @@ button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)
 .bar i{display:block;height:100%;background:var(--sky)}
 canvas{display:block;width:100%;max-width:300px;aspect-ratio:9/16;margin:0 auto;border-radius:16px;background:#2a2a2a}
 .status{font-size:13px;min-height:18px;margin:10px 0 0;color:var(--sky);text-align:center}
+.stage{position:relative;max-width:320px;width:100%;margin:0 auto;touch-action:pan-y}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;padding:0;border-radius:50%;background:rgba(20,16,18,.55);color:var(--fg);font-size:26px;line-height:1}
+.nav.prev{left:6px}.nav.next{right:6px}
+.opts{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.dots{display:flex;gap:6px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--fg)}
+.chips.small .chip span{padding:6px 10px;font-size:12px}
+.chips.small .sw{margin-right:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.runline{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.runline div{min-width:0}
+.runline b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.runline span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.two{margin-top:12px}
+.cta{display:flex;flex-direction:column;gap:10px}
+.pick.main{background:var(--fg);color:var(--bg);border:0;font-size:16px;min-height:56px}
+button.second{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.cta.ready .pick.main{background:transparent;color:var(--fg);border:1px dashed var(--muted);min-height:44px;font-size:13px}
+.cta.ready button.second{background:var(--fg);color:var(--bg);border:0;min-height:56px;font-size:16px}
+canvas{max-width:320px}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -64,28 +86,45 @@ a{color:var(--sky)}
 <div class="wrap">
   <header>
     <p class="logo">Flatto</p>
-    <div class="kick">SESEH RUN CLUB · RUN STORY</div>
     <div class="crew" id="crew" hidden>
       <div><b id="crewKm">–</b><span>KM BY THE CREW</span></div>
       <div><b id="crewRuns">–</b><span>RUNS POSTED</span></div>
     </div>
   </header>
 
-  <section>
-    <h2>Your run <small>1/3</small></h2>
-    <div class="two">
-      <button class="strava" id="strava" type="button">Connect Strava</button>
-      <label class="pick" for="shot">Use a screenshot<input id="shot" type="file" accept="image/*" hidden></label>
+  <div class="stage">
+    <canvas id="cv" width="1080" height="1920" aria-label="Your story preview. Swipe to change style."></canvas>
+    <button class="nav prev" id="prev" type="button" aria-label="Previous style">‹</button>
+    <button class="nav next" id="next" type="button" aria-label="Next style">›</button>
+  </div>
+  <div class="opts">
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <div class="chips small">
+      <label class="chip"><input type="radio" name="color" value="#FFFFFF" checked><span><i class="sw" style="background:#fff"></i><b class="sr">White</b></span></label>
+      <label class="chip"><input type="radio" name="color" value="#CFE3F3"><span><i class="sw" style="background:#CFE3F3"></i><b class="sr">Sky</b></span></label>
+      <label class="chip"><input type="radio" name="color" value="#4C2F31"><span><i class="sw" style="background:#4C2F31"></i><b class="sr">Plum</b></span></label>
+      <label class="chip"><input type="checkbox" id="mascot" checked><span>Mascot</span></label>
     </div>
-    <p class="hint" id="srcinfo">Strava picks your latest run. Apple Watch, Garmin or Whoop: screenshot your run summary and we read it.</p>
+  </div>
+
+  <section>
+    <div class="runline">
+      <div><b id="runName">Example run</b><span id="runMeta"></span></div>
+      <button class="ghost" id="editRun" type="button" aria-expanded="false">Edit</button>
+    </div>
+    <div class="two" id="sources">
+      <button class="strava" id="strava" type="button">Connect Strava</button>
+      <label class="pick" for="shot">Screenshot<input id="shot" type="file" accept="image/*" hidden></label>
+    </div>
+    <p class="hint" id="srcinfo">Strava loads your latest run. Other watch? Use a screenshot of your run summary.</p>
     <div class="runs" id="runs"></div>
     <div class="setup" id="setup" hidden>
-      <p class="hint" style="margin:0">One-time demo setup. Paste the Client ID and Client Secret from strava.com/settings/api. They stay on this phone.</p>
+      <p class="hint" style="margin:0">Demo setup, once. Paste the Client ID and Client Secret from strava.com/settings/api. They stay on this phone.</p>
       <label for="cid">Client ID<input id="cid" type="text" inputmode="numeric" autocomplete="off"></label>
       <label for="csec">Client Secret<input id="csec" type="password" autocomplete="off"></label>
       <button id="saveSetup" type="button">Save and connect</button>
     </div>
-    <div class="grid">
+    <div class="grid" id="manual" hidden>
       <label for="dist">km<input id="dist" type="text" inputmode="decimal" value="8.42"></label>
       <label for="time">Time<input id="time" type="text" inputmode="numeric" value="43:41"></label>
       <label for="num">Run #<input id="num" type="number" min="1" value="1"></label>
@@ -93,34 +132,11 @@ a{color:var(--sky)}
     <div class="level"><span id="lvlText">Run 1 at Flatto</span><span class="bar"><i id="lvlBar" style="width:0"></i></span></div>
   </section>
 
-  <section>
-    <h2>Style <small>2/3</small></h2>
-    <div class="chips">
-      <label class="chip"><input type="radio" name="style" value="big" checked><span>Big number</span></label>
-      <label class="chip"><input type="radio" name="style" value="classic"><span>Classic</span></label>
-      <label class="chip"><input type="radio" name="style" value="bib"><span>Race bib</span></label>
-      <label class="chip"><input type="radio" name="style" value="route"><span>Route</span></label>
-    </div>
-    <div class="chips" style="margin-top:10px">
-      <label class="chip"><input type="radio" name="color" value="#FFFFFF" checked><span><i class="sw" style="background:#fff"></i>White</span></label>
-      <label class="chip"><input type="radio" name="color" value="#CFE3F3"><span><i class="sw" style="background:#CFE3F3"></i>Sky</span></label>
-      <label class="chip"><input type="radio" name="color" value="#4C2F31"><span><i class="sw" style="background:#4C2F31"></i>Plum</span></label>
-      <label class="chip"><input type="checkbox" id="mascot" checked><span>Mascot</span></label>
-    </div>
-  </section>
-
-  <section>
-    <h2>Photo <small>3/3</small></h2>
-    <label class="pick" for="photo">Choose or take a photo<input id="photo" type="file" accept="image/*" hidden></label>
-    <p class="hint" id="photoinfo">Showing an example photo from Seseh.</p>
-  </section>
-
-  <canvas id="cv" width="1080" height="1920" aria-label="Your story preview"></canvas>
-
-  <div>
-    <button id="share" type="button">Share to Instagram</button>
+  <div class="cta">
+    <label class="pick main" for="photo" id="photoBtn">Add your photo<input id="photo" type="file" accept="image/*" hidden></label>
+    <button id="share" type="button" class="second">Share to Instagram</button>
     <p class="status" id="status" role="status"></p>
-    <p class="hint" style="text-align:center">In the share menu, swipe the app row to find <b>Instagram → Story</b>.<br>No Instagram there? Tap <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>: your story is the first photo in the gallery.</p>
+    <p class="hint" style="text-align:center">Share menu: swipe the app row to <b>Instagram → Story</b>. Not there? <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>.</p>
     <img class="out" id="out" alt="Your finished story" hidden>
   </div>
 </div>
@@ -154,46 +170,55 @@ function level(){
 $('num').value=store.get('flattoRuns',0)+1;
 
 /* ---------- Strava ---------- */
+// Live mode: client id in the page, secret on the token server. Demo mode: both pasted once on the owner's phone.
+const STRAVA={id:'STRAVA_CLIENT_ID',tokenUrl:'TOKEN_URL'},LIVE=!STRAVA.id.startsWith('STRAVA_');
 const PAGE=location.origin+location.pathname;
+let runName='Example run';
 function decodePolyline(s){let i=0,lat=0,lng=0,out=[];while(i<s.length){for(const k of[0,1]){let r=0,sh=0,b;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5}while(b>=32);const v=r&1?~(r>>1):r>>1;k?lng+=v:lat+=v}out.push([lat/1e5,lng/1e5])}return out}
 function setRoute(latlng){if(!latlng||latlng.length<2){route=null;return}const k=Math.cos(latlng[0][0]*Math.PI/180);route=latlng.map(([la,lo])=>[lo*k,-la])}
-async function token(){
-  const t=store.get('stravaTok',null),cfg=store.get('stravaCfg',null);if(!t||!cfg)return null;
-  if(t.expires_at*1000>Date.now()+60000)return t.access_token;
-  const r=await fetch('https://www.strava.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:cfg.id,client_secret:cfg.secret,grant_type:'refresh_token',refresh_token:t.refresh_token})});
-  if(!r.ok)return null;const j=await r.json();store.set('stravaTok',j);return j.access_token;
+async function exchange(body){
+  const r=LIVE?await fetch(STRAVA.tokenUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    :await fetch('https://www.strava.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,client_id:store.get('stravaCfg',{}).id,client_secret:store.get('stravaCfg',{}).secret})});
+  if(!r.ok)return null;const j=await r.json();store.set('stravaTok',j);return j;
 }
-function authorize(){const cfg=store.get('stravaCfg',null);location.href=`https://www.strava.com/oauth/mobile/authorize?client_id=${encodeURIComponent(cfg.id)}&redirect_uri=${encodeURIComponent(PAGE)}&response_type=code&approval_prompt=auto&scope=activity:read_all`}
+async function token(){
+  const t=store.get('stravaTok',null);if(!t)return null;
+  if(t.expires_at*1000>Date.now()+60000)return t.access_token;
+  const j=await exchange({grant_type:'refresh_token',refresh_token:t.refresh_token});return j&&j.access_token;
+}
+const clientId=()=>LIVE?STRAVA.id:(store.get('stravaCfg',{})||{}).id;
+function authorize(){location.href=`https://www.strava.com/oauth/mobile/authorize?client_id=${encodeURIComponent(clientId())}&redirect_uri=${encodeURIComponent(PAGE)}&response_type=code&approval_prompt=auto&scope=activity:read_all`}
+function pickRun(a){
+  $('dist').value=(a.distance/1000).toFixed(2);$('time').value=fmtTime(a.moving_time);runId='strava-'+a.id;runName=a.name;
+  setRoute(a.map&&a.map.summary_polyline?decodePolyline(a.map.summary_polyline):null);draw();
+}
 async function loadRuns(){
   const tk=await token();if(!tk){authorize();return}
   $('srcinfo').textContent='Loading your runs…';
   const r=await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=15',{headers:{Authorization:'Bearer '+tk}});
   if(!r.ok){$('srcinfo').textContent="Strava didn't answer. Try again in a moment.";return}
-  const runs=(await r.json()).filter(a=>/Run/.test(a.sport_type||a.type)).slice(0,5);
-  if(!runs.length){$('srcinfo').textContent='No runs in your last Strava activities.';return}
-  $('srcinfo').textContent='Your latest runs from Strava. Tap to switch.';
+  const runs=(await r.json()).filter(a=>/Run/.test(a.sport_type||a.type)).slice(0,4);
+  if(!runs.length){$('srcinfo').textContent='No runs in your latest Strava activities.';return}
+  $('sources').hidden=true;$('srcinfo').textContent='Latest run loaded. Tap another to switch.';
   const box=$('runs');box.innerHTML='';
   runs.forEach((a,i)=>{
-    const b=document.createElement('button');b.type='button';b.className='run';
+    const b=document.createElement('button');b.type='button';b.className='run';b.setAttribute('aria-pressed',i===0);
     const day=new Date(a.start_date_local).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     b.innerHTML=`<span></span><em>${day} · ${(a.distance/1000).toFixed(2)} km</em>`;b.firstChild.textContent=a.name;
-    b.addEventListener('click',()=>{box.querySelectorAll('.run').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');
-      $('dist').value=(a.distance/1000).toFixed(2);$('time').value=fmtTime(a.moving_time);runId='strava-'+a.id;
-      setRoute(a.map&&a.map.summary_polyline?decodePolyline(a.map.summary_polyline):null);draw()});
-    box.appendChild(b);if(i===0)b.click();
+    b.addEventListener('click',()=>{box.querySelectorAll('.run').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');pickRun(a)});
+    box.appendChild(b);
   });
+  pickRun(runs[0]);
 }
-$('strava').addEventListener('click',()=>{if(!store.get('stravaCfg',null)){$('setup').hidden=false;$('cid').focus();return}loadRuns()});
+$('strava').addEventListener('click',()=>{if(!LIVE&&!store.get('stravaCfg',null)){$('setup').hidden=false;$('cid').focus();return}loadRuns()});
 $('saveSetup').addEventListener('click',()=>{const id=$('cid').value.trim(),secret=$('csec').value.trim();if(!id||!secret){$('srcinfo').textContent='Paste both the Client ID and the Client Secret.';return}store.set('stravaCfg',{id,secret});authorize()});
 (async()=>{
-  const q=new URLSearchParams(location.search),code=q.get('code'),cfg=store.get('stravaCfg',null);
-  if(q.get('error')){history.replaceState(null,'',PAGE);$('srcinfo').textContent='Strava access was declined.';return}
-  if(code&&cfg){
-    history.replaceState(null,'',PAGE);
-    const r=await fetch('https://www.strava.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:cfg.id,client_secret:cfg.secret,code,grant_type:'authorization_code'})});
-    if(r.ok){store.set('stravaTok',await r.json());loadRuns()}else $('srcinfo').textContent="Strava connection failed. Check the Client ID and Secret.";
-  }else if(store.get('stravaTok',null))loadRuns();
+  const q=new URLSearchParams(location.search),code=q.get('code');
+  if(q.get('error')){history.replaceState(null,'',PAGE);$('srcinfo').textContent='Strava access was declined. You can still use a screenshot.';return}
+  if(code){history.replaceState(null,'',PAGE);if(await exchange({code,grant_type:'authorization_code'}))loadRuns();else $('srcinfo').textContent="Strava connection failed. Try again.";}
+  else if(store.get('stravaTok',null))loadRuns();
 })();
+$('editRun').addEventListener('click',()=>{const m=$('manual');m.hidden=!m.hidden;$('editRun').setAttribute('aria-expanded',!m.hidden);$('editRun').textContent=m.hidden?'Edit':'Done'});
 
 /* ---------- screenshot reading ---------- */
 function readSummary(txt){
@@ -216,7 +241,7 @@ $('shot').addEventListener('change',async e=>{
     const {data:{text}}=await Tesseract.recognize(f,'eng');
     const {km,secs}=readSummary(text);
     if(km)$('dist').value=km.toFixed(2);if(secs)$('time').value=fmtTime(secs);
-    route=null;runId='shot-'+(km||0)+'-'+(secs||0);
+    route=null;runName='From your screenshot';runId='shot-'+(km||0)+'-'+(secs||0);
     $('srcinfo').textContent=km&&secs?'Got it. Check the numbers below.':km||secs?'Got part of it. Fill in the rest below.':"Couldn't read it. Type your km and time below.";
     draw();
   }catch(err){$('srcinfo').textContent="Couldn't read it. Type your km and time below."}
@@ -275,7 +300,8 @@ function footer(y,c,d){
 }
 
 function draw(){
-  const d=data(),c=val('color'),st=val('style');level();
+  const d=data(),c=val('color'),st=STYLES[styleIdx];level();
+  $('runName').textContent=runName;$('runMeta').textContent=`${d.dist} km · ${d.time} · ${d.pace} /km`;
   ctx.clearRect(0,0,W,H);
   if(photo.complete&&photo.naturalWidth)cover(photo);
   ctx.shadowColor=c==='#4C2F31'?'rgba(255,255,255,.25)':'rgba(0,0,0,.35)';ctx.shadowBlur=18;
@@ -314,6 +340,10 @@ function draw(){
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
 }
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
+const STYLES=['big','classic','bib','route'];let styleIdx=0;
+function setStyle(i){styleIdx=(i+STYLES.length)%STYLES.length;$('dots').innerHTML=STYLES.map((_,k)=>`<i class="${k===styleIdx?'on':''}"></i>`).join('');draw()}
+$('prev').addEventListener('click',()=>setStyle(styleIdx-1));$('next').addEventListener('click',()=>setStyle(styleIdx+1));
+let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>40)setStyle(styleIdx+(e.clientX<sx?1:-1));sx=null});
 
 /* ---------- share ---------- */
 $('share').addEventListener('click',()=>{
@@ -329,9 +359,10 @@ $('share').addEventListener('click',()=>{
     }
   },'image/png');
 });
-$('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const img=new Image();img.onload=()=>{photo=img;$('photoinfo').textContent='Your photo is in. Swap it anytime.';draw()};img.src=URL.createObjectURL(f)});
-document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',draw)});
+$('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const img=new Image();img.onload=()=>{photo=img;$('photoBtn').firstChild.textContent='Change photo';document.querySelector('.cta').classList.add('ready');draw()};img.src=URL.createObjectURL(f)});
+document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',()=>{if(['dist','time'].includes(i.id)){runName='Your run';runId=null}draw()})});
 photo.onload=draw;mascot.onload=draw;
+setStyle(0);
 Promise.all(['140px Yellowtail','400px Anton','300px "Archivo Black"','800 40px Inter','600 30px Inter'].map(f=>document.fonts.load(f))).finally(draw);
 loadCrew();
 </script>
