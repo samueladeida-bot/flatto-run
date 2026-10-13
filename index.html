@@ -365,6 +365,14 @@ $('join').addEventListener('submit',async e=>{
 });
 $('notMe').addEventListener('click',()=>{setProfile(null);$('email').value='';$('email').focus()});
 document.querySelectorAll('input[name=period]').forEach(i=>i.addEventListener('change',showBoard));
+// A profile made before the database was live has no id: find it by email, or register it, before counting anything.
+async function ensureRunner(){
+  if(!DB_LIVE||!profile||profile.id)return profile;
+  const found=await findRunner(profile.email);
+  if(found){setProfile({...profile,...found});return profile}
+  const id=await rpc('join_runner',{p_first:profile.first,p_last:profile.last||'',p_email:profile.email,p_instagram:profile.insta||'',p_optin:!!profile.optin});
+  setProfile({...profile,id,total:0,runs:0});return profile;
+}
 async function addToBoard(d,id){
   if(!profile)return;
   if(!DB_LIVE){
@@ -372,6 +380,7 @@ async function addToBoard(d,id){
     store.set('flattoLog',[...store.get('flattoLog',[]),{t:Date.now(),km:d.km,email:profile.email}].slice(-500));showBoard();return;
   }
   try{
+    await ensureRunner();
     const res=await rpc('add_run',{p_runner:profile.id,p_email:profile.email,p_run_key:id,p_km:d.km,p_month:month});
     const msg={ok:`+${d.km.toFixed(1)} km on the leaderboard.`,duplicate:'This run is already on the leaderboard.',limit:'Daily limit reached (2 runs or 50 km a day). This one won\'t count.',unknown_runner:"We couldn't match your email. Tap Not you? and sign in again."}[res]||'';
     if(msg)note(msg);
@@ -599,6 +608,7 @@ photo.onload=draw;mascot.onload=draw;
 setStyle(0);
 Promise.all(['140px Yellowtail','400px Anton','300px "Archivo Black"','800 40px Inter','600 30px Inter','700 40px "Space Mono"','400 30px "Space Mono"'].map(f=>document.fonts.load(f))).finally(draw);
 if(profile)$('num').value=(profile.runs||0)+1;renderMe();showBoard();
+ensureRunner().then(()=>{if(profile&&DB_LIVE)findRunner(profile.email).then(f=>{if(f)setProfile({...profile,...f})})}).catch(()=>{});
 </script>
 </body>
 </html>
