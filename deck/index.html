@@ -36,6 +36,7 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
 /* type */
 .script{font-family:var(--script);font-weight:400;line-height:.9}
 .anton{font-family:var(--display);font-weight:400;line-height:.92;text-transform:uppercase;letter-spacing:.5px}
+h1,h2,h3{text-wrap:balance}
 .outline{font-family:var(--outline);color:transparent;-webkit-text-stroke:1.5px currentColor;line-height:.95}
 .kick{font-size:11px;letter-spacing:4px;font-weight:800;opacity:.7;text-transform:uppercase}
 .lead{font-size:16px;line-height:1.45;opacity:.85}
@@ -120,9 +121,11 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
 
 /* 7 mechanism */
 .eqs{display:flex;flex-direction:column;gap:14px;margin-top:20px}
-.eqs div{display:flex;flex-direction:column;gap:6px;border-bottom:2px solid var(--plum);padding-bottom:12px}
-.eqs b{font-family:var(--display);font-weight:400;font-size:28px;letter-spacing:.5px;text-transform:uppercase;line-height:1}
-.eqs i{display:none}
+.eqs{gap:0!important;margin-top:28px!important}
+.eqs div{display:flex;flex-direction:column;gap:8px;border-top:2px solid var(--plum);padding:16px 0}
+.eqs div:last-child{border-bottom:2px solid var(--plum)}
+.eqs b{font-family:var(--display);font-weight:400;font-size:32px;letter-spacing:.5px;text-transform:uppercase;line-height:1}
+.eqs i{font-style:normal;color:var(--plum);opacity:.45;padding:0 4px}
 .eqs span{font-size:15px;line-height:1.4}
 /* 7b calculator: sits above the tap zones so its buttons work */
 .s7b{background:var(--plum)}
@@ -232,11 +235,10 @@ html,body{height:100%;background:var(--plum-deep);color:var(--ecru);font-family:
     <p class="kick up" style="--d:0">What it brings</p>
     <h2 class="anton up" style="--d:1;font-size:46px;margin-top:10px">Every run works for Flatto.</h2>
     <div class="eqs">
-      <div class="up" style="--d:2"><b>1 run posted =</b><i>=</i><span>1 story with your logo, mascot and @flatto.bali, seen by the runner's friends</span></div>
-      <div class="up" style="--d:3"><b>1 story =</b><i>=</i><span>1 reason to come back: the QR only works at the counter</span></div>
-      <div class="up" style="--d:4"><b>1 runner on the board =</b><i>=</i><span>1 regular who wants to climb</span></div>
+      <div class="up" style="--d:2"><b>1 run <i>→</i> 1 Flatto story</b><span>Your logo, mascot and @flatto.bali in their friends' feeds.</span></div>
+      <div class="up" style="--d:3"><b>1 story <i>→</i> 1 visit</b><span>The QR only works at the counter.</span></div>
+      <div class="up" style="--d:4"><b>1 runner <i>→</i> 1 regular</b><span>The leaderboard keeps them coming back.</span></div>
     </div>
-    <img class="side up" style="--d:5;position:relative;right:auto;width:34%;align-self:flex-end;margin-top:14px;transform:rotate(5deg)" src="img/big.jpg" alt="">
   </section>
 
   <section class="slide s7b">
