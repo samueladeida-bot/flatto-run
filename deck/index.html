@@ -137,6 +137,7 @@ h1,h2,h3{text-wrap:balance}
 .result{margin-top:18px;text-align:center;background:var(--sky);color:var(--plum);border-radius:18px;padding:16px}
 .result b{display:block;font-family:var(--display);font-weight:400;font-size:64px;line-height:1;font-variant-numeric:tabular-nums}
 .result span{display:block;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.result .formula{font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:6px;font-variant-numeric:tabular-nums}
 .result small{display:block;font-size:12px;line-height:1.4;margin-top:8px;opacity:.8}
 .tracked{margin-top:16px}
 .tracked ul{list-style:none;padding:0;margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -243,16 +244,17 @@ h1,h2,h3{text-wrap:balance}
 
   <section class="slide s7b">
     <p class="kick up" style="--d:0">Your numbers</p>
-    <h2 class="anton up" style="--d:1;font-size:40px;margin-top:10px">How many of your customers run each week?</h2>
+    <h2 class="anton up" style="--d:1;font-size:40px;margin-top:10px">How many runners come by each week?</h2>
     <div class="calc up" style="--d:2">
       <button type="button" id="minus" aria-label="Fewer runners">−</button>
       <output id="runners" aria-live="polite">10</output>
       <button type="button" id="plus" aria-label="More runners">+</button>
     </div>
     <div class="result up" style="--d:3">
-      <b id="stories">43</b>
+      <p class="formula" id="formula">10 runners × 1 story × 4 weeks</p>
+      <b id="stories">40</b>
       <span>Flatto stories a month</span>
-      <small>If each of them posts one run a week. Every story carries your logo, the mascot and @flatto.bali.</small>
+      <small>Each one with your logo, the mascot and @flatto.bali.</small>
     </div>
     <div class="tracked up" style="--d:4">
       <p class="kick" style="opacity:.8">And the tool tracks the real numbers</p>
@@ -318,11 +320,11 @@ document.getElementById('deck').addEventListener('click',e=>{
 addEventListener('keydown',e=>{if(['ArrowRight',' ','PageDown'].includes(e.key))go(i+1);if(['ArrowLeft','PageUp'].includes(e.key))go(i-1)});
 let sx=null;addEventListener('touchstart',e=>{sx=e.touches[0].clientX},{passive:true});
 addEventListener('touchend',e=>{if(sx==null||e.target.closest('.calc'))return;const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50){go(i+(dx<0?1:-1));e.preventDefault()}sx=null});
-// Your-numbers slide: the owner sets the weekly runners; stories a month = runners x 52 / 12.
+// Your-numbers slide: the owner sets the weekly runners; one story each a week, four weeks a month.
 let runners=10;
-function calc(){document.getElementById('runners').textContent=runners;document.getElementById('stories').textContent=Math.round(runners*52/12)}
-document.getElementById('minus').onclick=e=>{runners=Math.max(1,runners-(runners>20?5:1));calc()};
-document.getElementById('plus').onclick=e=>{runners=Math.min(500,runners+(runners>=20?5:1));calc()};
+function calc(){document.getElementById('runners').textContent=runners;document.getElementById('formula').textContent=`${runners} runners × 1 story × 4 weeks`;document.getElementById('stories').textContent=runners*4}
+document.getElementById('minus').onclick=e=>{runners=Math.max(5,runners-5);calc()};
+document.getElementById('plus').onclick=e=>{runners=Math.min(200,runners+5);calc()};
 calc();
 try{new QRCode(document.getElementById('qr'),{text:APP,width:344,height:344,colorDark:'#4C2F31',colorLight:'#F4EEDC',correctLevel:QRCode.CorrectLevel.M})}catch(e){document.getElementById('qr').textContent=APP}
 go((parseInt(location.hash.slice(1))||1)-1);
