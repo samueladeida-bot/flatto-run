@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Flatto · a first sketch</title>
+<meta name="description" content="A community and a fitness tracker, in Flatto colours. A first sketch.">
+<meta property="og:title" content="Flatto · a first sketch">
+<meta property="og:description" content="A community and a fitness tracker, in Flatto colours.">
+<meta property="og:image" content="https://flatto.netlify.app/kumpul/img/s-big.webp">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,500;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: an Instagram-style story deck. Full-height 9:16 frames, progress bars on top, tap or swipe to move, one orchestrated rise-in per frame. */
+:root{
+  --ink:#0E0D0C; --paper:#F6F5F2; --soft:#5E5A55; --mute:#A8A39C;
+  --plum:#4C2F31; --sky:#CFE3F3; --cream:#F4EEDC;
+  --r-black:#050505; --r-gold:#D9BD97; --r-red:#ED0037;
+  --display:"Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --body:Inter, -apple-system, system-ui, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:#000;color:var(--paper);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.deck{position:relative;height:100%;width:min(100vw, calc(100dvh * 9 / 16));margin:0 auto;overflow:hidden;background:var(--ink);container-type:inline-size}
+@supports not (height:100dvh){.deck{width:min(100vw, calc(100vh * 9 / 16))}}
+.bars{position:absolute;z-index:10;left:max(10px, env(safe-area-inset-left,0px));right:max(10px, env(safe-area-inset-right,0px));top:10px;display:flex;gap:4px}
+.bars i{flex:1;height:3px;border-radius:3px;background:rgba(246,245,242,.28);overflow:hidden}
+.bars i b{display:block;height:100%;width:0;background:var(--paper);transition:width .35s}
+.bars i.done b,.bars i.now b{width:100%}
+.deck.lt .bars i{background:rgba(14,13,12,.18)}.deck.lt .bars i b{background:var(--ink)}
+.mark{position:absolute;z-index:10;left:max(18px, env(safe-area-inset-left,0px));top:24px;font:900 4.6cqw/1 var(--display);letter-spacing:-.03em}
+.count{position:absolute;z-index:10;right:max(18px, env(safe-area-inset-right,0px));top:26px;font:500 3cqw/1 var(--body);opacity:.6;font-variant-numeric:tabular-nums}
+.deck.lt .mark,.deck.lt .count{color:var(--ink)}
+
+.f{position:absolute;inset:0;display:flex;flex-direction:column;gap:3.4cqw;padding:17cqw 6.5cqw 7cqw;padding-left:max(6.5cqw, env(safe-area-inset-left,0px));padding-right:max(6.5cqw, env(safe-area-inset-right,0px));opacity:0;visibility:hidden;transition:opacity .35s,visibility 0s .35s;overflow:hidden}
+.f.on{opacity:1;visibility:visible;transition:opacity .35s}
+.f > *{position:relative;z-index:1}
+.dark{background:var(--ink);color:var(--paper)}
+.light{background:var(--paper);color:var(--ink)}
+.plum{background:var(--plum);color:var(--cream)}
+.rl{background:var(--r-black);color:#F4F4F1}
+
+.kick{font:600 2.9cqw/1.2 var(--body);letter-spacing:.2em;text-transform:uppercase;opacity:.8}
+.light .kick{color:var(--plum);opacity:1}.plum .kick{color:var(--sky);opacity:1}.rl .kick{color:var(--r-gold);opacity:1}
+.mega{font:900 23cqw/.82 var(--display);letter-spacing:-.06em}
+h1{font:900 13cqw/.92 var(--display);letter-spacing:-.05em;text-wrap:balance}
+h2{font:800 9.4cqw/.98 var(--display);letter-spacing:-.04em;text-wrap:balance}
+h2 em,h1 em{font-style:italic;font-weight:800}
+.plum h2 em{color:var(--sky)}.dark h2 em,.dark h1 em{color:var(--sky)}.rl h2 em{color:var(--r-gold)}.light h2 em{color:var(--plum)}
+p.lead{font:500 4.1cqw/1.42 var(--body);opacity:.82;max-width:34em}
+.light p.lead{color:var(--soft);opacity:1}
+.foot{font:500 3cqw/1.4 var(--body);opacity:.55}
+.spacer{flex:1}
+
+.bg{position:absolute!important;inset:0;z-index:0!important;width:100%;height:100%;object-fit:cover}
+.shade{position:absolute!important;inset:0;z-index:0!important}
+
+.vis{flex:1;min-height:0;display:flex;justify-content:center;align-items:flex-end;gap:3cqw}
+.vis img{height:100%;max-height:100%;min-height:0;width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 5cqw 7cqw rgba(0,0,0,.4))}
+.vis.two img{max-width:47%}
+.vis.three{align-items:center}
+.vis.three img{max-width:31%}
+.vis.three img:nth-child(2){transform:translateY(-4cqw)}
+.vis.tilt img:nth-child(1){transform:rotate(-4deg)}
+.vis.tilt img:nth-child(2){transform:rotate(4deg) translateY(-3cqw)}
+
+/* rise-in, staggered by --d; resting state is fully visible */
+.f.on .up{animation:up .7s cubic-bezier(.2,.75,.2,1) both;animation-delay:calc(var(--d,0) * 110ms + 80ms)}
+@keyframes up{from{opacity:0;transform:translateY(5cqw)}to{opacity:1;transform:none}}
+.f.on .zoom{animation:zoom 9s ease-out both}
+@keyframes zoom{from{transform:scale(1.12)}to{transform:scale(1)}}
+
+/* marquee */
+.mq{display:flex;flex-direction:column;gap:2.4cqw;margin:0 -6.5cqw}
+.mq .row{display:flex;gap:2.4cqw;width:max-content;animation:slide 26s linear infinite}
+.mq .row.rev{animation-direction:reverse;animation-duration:30s}
+.mq span{font:700 5cqw/1 var(--display);padding:3cqw 4.6cqw;border-radius:999px;white-space:nowrap;letter-spacing:-.01em}
+.mq .a{background:var(--paper);color:var(--ink)}.mq .b{background:transparent;color:var(--paper);box-shadow:inset 0 0 0 1.5px rgba(246,245,242,.35)}.mq .c{background:var(--sky);color:var(--plum)}.mq .d{background:var(--r-gold);color:var(--r-black)}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+/* problem mocks */
+.mock{border-radius:5cqw;padding:4.4cqw;display:flex;flex-direction:column;gap:2cqw;background:#FFFFFF;color:var(--ink);box-shadow:0 3cqw 8cqw rgba(14,13,12,.08)}
+.mock .top{display:flex;align-items:center;gap:2.6cqw;font:600 3.6cqw/1.2 var(--body)}
+.mock .av{width:8cqw;height:8cqw;border-radius:50%;flex:none}
+.mock .t{font:700 4.4cqw/1.25 var(--display)}
+.mock .s{font:500 3.5cqw/1.35 var(--body);color:var(--soft)}
+.badge{margin-left:auto;font:700 3cqw/1 var(--body);padding:1.6cqw 2.4cqw;border-radius:999px;background:#E9E6E0;color:var(--soft)}
+
+/* brand switch: four venues, one app */
+.sw{display:flex;flex-wrap:wrap;gap:2cqw;position:relative;z-index:7!important}
+.sw button{font:700 3.6cqw/1 var(--body);padding:2.8cqw 4.2cqw;border-radius:999px;border:0;cursor:pointer;background:rgba(255,255,255,.14);color:inherit}
+.sw button[aria-pressed="true"]{background:var(--bacc);color:var(--bon)}
+.sw button small{font:600 2.6cqw/1 var(--body);opacity:.7;margin-left:1.2cqw}
+.sw button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+#brandF{--bacc:var(--cream);--bon:var(--plum);transition:background .5s,color .5s}
+#brandF .kick{color:var(--bacc)}
+#brandF .ph{transition:opacity .45s;position:absolute;left:50%;top:0;transform:translateX(-50%);opacity:0}
+#brandF .ph.show{opacity:1}
+.phwrap{position:relative;display:flex;justify-content:center;align-items:flex-end;flex:1;min-height:0}
+.phwrap img{height:100%;width:auto;max-width:72%;object-fit:contain;filter:drop-shadow(0 5cqw 8cqw rgba(0,0,0,.45))}
+.logos{display:flex;align-items:center;gap:4cqw;height:9cqw}
+.logos img{height:100%;width:auto;transition:opacity .45s}
+
+/* steps */
+.steps{display:flex;flex-direction:column;gap:2cqw}
+.step{display:flex;gap:3.4cqw;align-items:baseline;font:500 4cqw/1.4 var(--body)}
+.step em{font:900 6cqw/1 var(--display);font-style:normal;min-width:6cqw;color:var(--plum)}
+.light .step{color:var(--soft)}.light .step strong{color:var(--ink)}
+
+/* loop */
+.loopw{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.loop{position:relative;width:min(100%, 74cqw);aspect-ratio:1}
+.loop svg{position:absolute;inset:0;width:100%;height:100%}
+.loop .ring{transform-origin:50% 50%;animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.node{position:absolute;width:32cqw;transform:translate(-50%,-50%);text-align:center;font:700 3.6cqw/1.2 var(--body);background:rgba(244,238,220,.1);border-radius:4cqw;padding:2.6cqw 2cqw;backdrop-filter:blur(4px)}
+.node b{display:block;font:900 5.6cqw/1 var(--display);color:var(--sky);margin-bottom:1cqw}
+.loop .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:900 6cqw/1 var(--display);letter-spacing:-.03em;text-align:center}
+
+/* league */
+.lg{display:flex;flex-direction:column;gap:2.4cqw}
+.lr{display:grid;grid-template-columns:7cqw 13cqw 1fr;align-items:center;gap:3cqw;padding:3cqw 3.6cqw;border-radius:4.4cqw;background:rgba(255,255,255,.06)}
+.lr .n{font:900 6cqw/1 var(--display)}
+.lr .lo{width:13cqw;height:13cqw;border-radius:3.4cqw;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.lr .lo img{width:84%;height:auto}
+.lr .nm{font:700 4.2cqw/1.15 var(--display)}
+.lr .bar{height:1.6cqw;border-radius:999px;background:rgba(255,255,255,.1);margin-top:1.6cqw;overflow:hidden}
+.lr .bar i{display:block;height:100%;border-radius:999px;background:var(--sky);width:0;transition:width 1.2s cubic-bezier(.2,.75,.2,1) .3s}
+.f.on .lr .bar i{width:var(--w)}
+.lr.you{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(207,227,243,.5)}
+
+table{color:inherit;width:100%;border-collapse:collapse;font:500 3.7cqw/1.3 var(--body)}
+th,td{text-align:left;padding:2.8cqw 1.4cqw;border-bottom:1px solid rgba(14,13,12,.1)}
+th{font:600 2.9cqw/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+td.y{font-weight:700;color:var(--ink)}td.n{color:#8A857E}
+.plans{display:flex;flex-direction:column;gap:2.4cqw}
+.plan{border-radius:4.5cqw;padding:4cqw 4.4cqw;background:#FFFFFF;display:flex;flex-direction:column;gap:1.2cqw}
+.plan.hi{background:var(--ink);color:var(--paper)}
+.plan b{font:800 5.4cqw/1 var(--display);letter-spacing:-.02em}
+.plan small{font:600 2.9cqw/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;opacity:.6}
+.plan span{font:500 3.6cqw/1.4 var(--body);color:var(--soft)}.plan.hi span{color:#C9C4BD}
+
+.hint{position:absolute;z-index:6;left:0;right:0;bottom:max(16px, env(safe-area-inset-bottom,0px));text-align:center;font:600 2.6cqw/1 var(--body);letter-spacing:.24em;text-transform:uppercase;opacity:.65;pointer-events:none}
+.nav{position:absolute;inset:0;z-index:5;display:flex}
+.nav button{flex:1;background:none;border:0;padding:0;cursor:pointer;color:inherit}
+.nav button:first-child{flex:.55}
+.nav button:focus-visible{outline:2px solid var(--sky);outline-offset:-6px}
+@media (prefers-reduced-motion:reduce){
+  .f,.f.on,.bars i b,#brandF,#brandF .ph,.lr .bar i{transition:none}
+  .f.on .up,.f.on .zoom,.mq .row,.loop .ring{animation:none}
+}
+
+/* imagine timeline */
+.tl{display:flex;flex-direction:column;gap:0;border-left:2px solid rgba(207,227,243,.35);margin-left:2cqw}
+.tl div{position:relative;padding:0 0 4.2cqw 5.4cqw}
+.tl div::before{content:"";position:absolute;left:-1.9cqw;top:1cqw;width:3.2cqw;height:3.2cqw;border-radius:50%;background:var(--sky)}
+.tl b{display:block;font:800 3.4cqw/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--sky);margin-bottom:1.4cqw}
+.tl span{font:600 4.6cqw/1.3 var(--display);letter-spacing:-.01em}
+/* stories wall */
+.wall{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2.4cqw;align-content:start}
+.wall figure{margin:0;display:flex;flex-direction:column;gap:1.2cqw;align-items:center}
+.wall .st{width:100%;aspect-ratio:9/16;border-radius:3cqw;overflow:hidden;box-shadow:0 0 0 .7cqw var(--ink),0 0 0 1.3cqw var(--sky)}
+.wall .st img{width:100%;height:100%;object-fit:cover}
+.wall figcaption{font:600 2.8cqw/1 var(--body);opacity:.7}
+.f.on .wall figure{animation:pop .5s cubic-bezier(.2,.8,.2,1.2) both;animation-delay:calc(var(--i) * 90ms + 300ms)}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+/* calculator */
+.calc{display:flex;flex-direction:column;gap:3cqw;position:relative;z-index:7!important}
+.calc label{font:600 3.8cqw/1.2 var(--body)}
+.calc input[type=range]{width:100%;accent-color:var(--plum);height:8cqw}
+.calc .row2{display:flex;justify-content:space-between;align-items:baseline}
+.calc .row2 output{font:900 9cqw/1 var(--display);letter-spacing:-.03em}
+.result{background:var(--ink);color:var(--paper);border-radius:5cqw;padding:5cqw;display:flex;flex-direction:column;gap:1.4cqw}
+.result .num{font:900 20cqw/.9 var(--display);letter-spacing:-.05em;color:var(--sky);font-variant-numeric:tabular-nums}
+.result .lbl{font:600 4.2cqw/1.3 var(--body)}
+.result .sub{font:500 3.4cqw/1.4 var(--body);opacity:.65}
+@media (prefers-reduced-motion:reduce){.f.on .wall figure{animation:none}}
+/* app tour */
+.tour{flex:1;min-height:0;display:flex;justify-content:center;position:relative}
+.tour img{position:absolute;left:50%;top:0;height:100%;width:auto;max-width:78%;transform:translateX(-50%);object-fit:contain;opacity:0;transition:opacity .4s;filter:drop-shadow(0 5cqw 8cqw rgba(0,0,0,.45))}
+.tour img.show{opacity:1}
+.tabs{display:flex;flex-wrap:wrap;gap:1.6cqw;justify-content:center;position:relative;z-index:7!important}
+.tabs button{font:600 3.3cqw/1 var(--body);padding:2.4cqw 3.6cqw;border-radius:999px;border:0;cursor:pointer;background:rgba(255,255,255,.12);color:inherit}
+.tabs button[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
+.tabs button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.tour img{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+  <div class="bars" id="bars" aria-hidden="true"></div>
+  <div class="mark">kumpul</div>
+  <div class="count" id="count" aria-live="polite"></div>
+
+  <!-- 1 cover -->
+  <section class="f dark on" data-t="dark" aria-label="Cover" style="padding-bottom:15cqw">
+    <img class="bg zoom" src="img/p-run-group.webp" alt="">
+    <div class="shade" style="background:linear-gradient(180deg, rgba(14,13,12,.15) 0%, rgba(14,13,12,.35) 40%, rgba(14,13,12,.97) 72%)"></div>
+    <div class="spacer"></div>
+    <div class="kick up" style="--d:0">Your idea, sketched · Flatto</div>
+    <h1 class="up" style="--d:1">A community. A fitness tracker. <em>In Flatto colours.</em></h1>
+    <p class="lead up" style="--d:2">A first draft of the idea we talked about. Nothing is fixed: tell me what you love and what you’d change.</p>
+  </section>
+
+  <!-- idea -->
+  <section class="f light" data-t="light" aria-label="The idea">
+    <div class="kick up" style="--d:0">The idea in three parts</div>
+    <h2 class="up" style="--d:1">One app for <em>Flatto’s people.</em></h2>
+    <div class="mock up" style="--d:2"><div class="t">A community</div><div class="s">Your regulars in one place: a feed, stories of the day, people following each other on Instagram.</div></div>
+    <div class="mock up" style="--d:3"><div class="t">A fitness tracker</div><div class="s">Runs and workouts counted on their own, from Apple Health, Garmin, Whoop or Strava. Streaks, records, a weekly ranking.</div></div>
+    <div class="mock up" style="--d:4"><div class="t">Flatto everywhere</div><div class="s">Every run, every shake becomes a story with the Flatto logo, the mascot and @flatto.bali.</div></div>
+  </section>
+
+  <!-- app tour -->
+  <section class="f dark" id="tourF" data-t="dark" aria-label="Inside the app">
+    <div class="kick up" style="--d:0">Take a look inside</div>
+    <h2 class="up" style="--d:1">The app, <em>screen by screen.</em></h2>
+    <div class="tour up" style="--d:2">
+      <img class="show" src="img/Main.webp" alt="Home: monthly goal, week, new run from Health">
+      <img src="img/Communaute.webp" alt="The Flatto space: news, feed, ranking">
+      <img src="img/Fil.webp" alt="Feed: stories of the day and runner of the week">
+      <img src="img/Classement.webp" alt="Weekly ranking">
+      <img src="img/Terminee.webp" alt="Run added: rank and streak">
+      <img src="img/Story.webp" alt="Story composer in Flatto colours">
+      <img src="img/Membre.webp" alt="Member profile with Follow on Instagram">
+      <img src="img/Moi.webp" alt="My profile: total, streak, badges">
+    </div>
+    <div class="tabs up" style="--d:3" role="group" aria-label="Show screen">
+      <button type="button" aria-pressed="true">Home</button><button type="button" aria-pressed="false">Flatto</button><button type="button" aria-pressed="false">Feed</button><button type="button" aria-pressed="false">Ranking</button><button type="button" aria-pressed="false">Run done</button><button type="button" aria-pressed="false">Story</button><button type="button" aria-pressed="false">Profile</button><button type="button" aria-pressed="false">Me</button>
+    </div>
+  </section>
+
+  <!-- imagine -->
+  <section class="f dark" data-t="dark" aria-label="Imagine">
+    <div class="kick up" style="--d:0">Picture this</div>
+    <h1 class="up" style="--d:1">Imagine next Sunday <em>at Flatto.</em></h1>
+    <div class="spacer"></div>
+    <div class="tl up" style="--d:2">
+      <div><b>6:30</b><span>A group run leaves from your counter.</span></div>
+      <div><b>7:45</b><span>Stories go up. The Flatto logo, the mascot, @flatto.bali, on every one.</span></div>
+      <div><b>9:00</b><span>Their friends reply: “Where is this café?”</span></div>
+      <div><b>Monday</b><span>New faces at Flatto, ordering a shake, scanning your QR.</span></div>
+      <div><b>Every week</b><span>Again. Without paying for a single ad.</span></div>
+    </div>
+    <p class="foot up" style="--d:3">An illustration of how it works, not a forecast.</p>
+  </section>
+
+  <!-- 5 how -->
+  <section class="f light" data-t="light" aria-label="How it works">
+    <div class="kick up" style="--d:0">The tracker</div>
+    <h2 class="up" style="--d:1">Scan. Move. <em>It counts.</em></h2>
+    <div class="steps up" style="--d:2">
+      <div class="step"><em>1</em><span><strong>Scan</strong> the QR at the counter. The venue’s space opens.</span></div>
+      <div class="step"><em>2</em><span><strong>Move.</strong> Runs flow in from Apple Health, Garmin, Whoop. Classes by check-in.</span></div>
+      <div class="step"><em>3</em><span><strong>Show it.</strong> Ranking, streak and a story in the venue’s colours.</span></div>
+    </div>
+    <div class="vis three up" style="--d:3"><img src="img/Rejoindre.webp" alt="Join screen after the QR"><img src="img/Main.webp" alt="Home with a new run"><img src="img/Terminee.webp" alt="Run added, rank up"></div>
+  </section>
+
+  <!-- 7 social -->
+  <section class="f dark" data-t="dark" aria-label="Social">
+    <div class="kick up" style="--d:0">The community</div>
+    <h2 class="up" style="--d:1">A little social network <em>around Flatto.</em></h2>
+    <p class="lead up" style="--d:2">Stories of the day, cheers, Runner of the week. Tap anyone, follow them on Instagram in one tap.</p>
+    <div class="vis two tilt up" style="--d:3"><img src="img/Fil.webp" alt="Community feed"><img src="img/Membre.webp" alt="Member profile with Follow on Instagram"></div>
+  </section>
+
+  <!-- ranking -->
+  <section class="f dark" data-t="dark" aria-label="Ranking and streaks">
+    <div class="kick up" style="--d:0">The game</div>
+    <h2 class="up" style="--d:1">Rankings, streaks, records. <em>A reason to come back.</em></h2>
+    <p class="lead up" style="--d:2">Today, this week, this month. Ranked by distance, not speed, so everyone has a shot. And a nudge when someone passes you.</p>
+    <div class="vis two tilt up" style="--d:3"><img src="img/Classement.webp" alt="Weekly ranking at Flatto"><img src="img/Moi.webp" alt="Profile with total, streak and badges"></div>
+  </section>
+
+  <!-- wall -->
+  <section class="f dark" data-t="dark" aria-label="Stories wall">
+    <div class="kick up" style="--d:0">Your brand, everywhere</div>
+    <h2 class="up" style="--d:1">Run or not, <em>everyone posts Flatto.</em></h2>
+    <div class="wall">
+      <figure style="--i:0"><div class="st"><img src="img/s-big.webp" alt="Flatto story, big numbers"></div><figcaption>@maya.moves</figcaption></figure>
+      <figure style="--i:1"><div class="st"><img src="img/s-polaroid.webp" alt="Flatto story, polaroid"></div><figcaption>@keanu.runs</figcaption></figure>
+      <figure style="--i:2"><div class="st"><img src="img/s-stamp.webp" alt="Flatto story, stamp"></div><figcaption>@lucas_bali</figcaption></figure>
+      <figure style="--i:3"><div class="st"><img src="img/s-c-receipt.webp" alt="Flatto coffee story, receipt"></div><figcaption>@ana.km</figcaption></figure>
+      <figure style="--i:4"><div class="st"><img src="img/s-s-mascot.webp" alt="Flatto story, mascot"></div><figcaption>@tom.trails</figcaption></figure>
+      <figure style="--i:5"><div class="st"><img src="img/s-c-polaroid.webp" alt="Flatto coffee story, polaroid"></div><figcaption>@putu.run</figcaption></figure>
+    </div>
+    <p class="foot up" style="--d:3">Story designs already made for Flatto, run and “just coffee”. Handles are examples.</p>
+  </section>
+
+  <!-- 9 lock screen -->
+  <section class="f dark" data-t="dark" aria-label="Direct line">
+    <div class="kick up" style="--d:0">Your side</div>
+    <h2 class="up" style="--d:1">Straight to the lock screen. <em>No algorithm.</em></h2>
+    <p class="lead up" style="--d:2">A new shake, a Sunday run, a party: post it, and it lands on your regulars’ lock screen. No algorithm.</p>
+    <div class="vis two up" style="--d:3"><img src="img/Annonce.webp" alt="Venue writes an announcement"><img src="img/Alerte.webp" alt="Notifications on the lock screen"></div>
+  </section>
+
+  <!-- 4 brand switch -->
+  <section class="f plum" id="brandF" data-t="dark" aria-label="One app, every brand">
+    <div class="kick up" style="--d:0">And later</div>
+    <h2 class="up" style="--d:1">Other places could join, <em>each in its colours.</em></h2>
+    <div class="sw up" style="--d:2" role="group" aria-label="Show the app as">
+      <button type="button" data-b="0" aria-pressed="true">Flatto</button>
+      <button type="button" data-b="1" aria-pressed="false">Reload<small>gym</small></button>
+      <button type="button" data-b="2" aria-pressed="false">Jungle Padel<small>padel</small></button>
+      <button type="button" data-b="3" aria-pressed="false">Pulse<small>pilates</small></button>
+    </div>
+    <div class="phwrap up" style="--d:3">
+      <img class="ph show" src="img/Communaute.webp" alt="Flatto café space: plum, cream and the mascot">
+      <img class="ph" src="img/CheckIn.webp" alt="Example: Reload Sanctuary gym check-in in black and gold">
+      <img class="ph" src="img/Padel.webp" alt="Example: Jungle Padel match result in green and lime">
+      <img class="ph" src="img/Pilates.webp" alt="Example: Pulse Pilates class in rust and cream">
+    </div>
+    <p class="foot up" style="--d:4">Tap a name. Flatto is shown as it could look; Reload, Jungle Padel and Pulse are examples in their own style.</p>
+  </section>
+
+  <!-- 14 close: teaser -->
+  <section class="f plum" data-t="dark" aria-label="Soon at Flatto" style="padding-bottom:14cqw">
+    <img class="bg zoom" src="img/s-big.webp" alt="">
+    <div class="shade" style="background:linear-gradient(180deg, rgba(76,47,49,.1) 0%, rgba(76,47,49,.25) 45%, rgba(43,26,28,.96) 78%)"></div>
+    <div class="spacer"></div>
+    <div class="kick up" style="--d:0">Next Sunday, 7:45</div>
+    <div class="mega up" style="--d:1;font-size:15.5cqw">Your logo.</div>
+    <div class="mega up" style="--d:2;font-size:15.5cqw;color:var(--sky);font-style:italic">Everywhere.</div>
+    <p class="lead up" style="--d:3">Just a sketch for now. What do you think?</p>
+    <p class="foot up" style="--d:4">Mock-ups. Names and other venues are examples.</p>
+  </section>
+
+  <div class="nav"><button type="button" id="prev" aria-label="Previous slide"></button><button type="button" id="next" aria-label="Next slide"></button></div>
+  <div class="hint" id="hint">Tap to continue</div>
+</div>
+
+<script>
+(function(){
+  var deck=document.getElementById('deck'), frames=[].slice.call(deck.querySelectorAll('.f')), bars=document.getElementById('bars'), count=document.getElementById('count'), hint=document.getElementById('hint'), i=0;
+  frames.forEach(function(){var b=document.createElement('i');b.appendChild(document.createElement('b'));bars.appendChild(b)});
+  var bi=[].slice.call(bars.children);
+  function show(n){
+    i=Math.max(0,Math.min(frames.length-1,n));
+    frames.forEach(function(f,k){f.classList.toggle('on',k===i);f.setAttribute('aria-hidden',k===i?'false':'true')});
+    bi.forEach(function(b,k){b.className=k<i?'done':(k===i?'now':'')});
+    deck.classList.toggle('lt',frames[i].getAttribute('data-t')==='light');
+    count.textContent=(i+1)+' / '+frames.length;
+    if(i>0)hint.hidden=true;
+    try{history.replaceState(null,'','#s'+(i+1))}catch(e){}
+  }
+  document.getElementById('next').addEventListener('click',function(){show(i+1)});
+  document.getElementById('prev').addEventListener('click',function(){show(i-1)});
+  document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();show(i+1)}if(e.key==='ArrowLeft'){show(i-1)}});
+  var x0=null,y0=null;
+  deck.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;y0=e.touches[0].clientY},{passive:true});
+  deck.addEventListener('touchend',function(e){if(x0===null)return;var dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){e.preventDefault();show(i+(dx<0?1:-1))}x0=null},{passive:false});
+  // brand switch: four venues
+  var bf=document.getElementById('brandF'), bb=[].slice.call(bf.querySelectorAll('.sw button')), bp=[].slice.call(bf.querySelectorAll('.ph'));
+  var looks=[['#4C2F31','#F4EEDC','#F4EEDC','#4C2F31'],['#050505','#F4F4F1','#D9BD97','#050505'],['#273E2A','#F3F7EC','#D1FF79','#273E2A'],['#C47C5E','#FFF7F1','#FCEFE5','#A85F43']];
+  function brand(k){var L=looks[k];bf.style.background=L[0];bf.style.color=L[1];bf.style.setProperty('--bacc',L[2]);bf.style.setProperty('--bon',L[3]);
+    bb.forEach(function(b,j){b.setAttribute('aria-pressed',j===k?'true':'false')});bp.forEach(function(p,j){p.classList.toggle('show',j===k)})}
+  bb.forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();brand(parseInt(b.getAttribute('data-b'),10))});b.addEventListener('touchend',function(e){e.stopPropagation()})});
+  // app tour: auto-advance while the slide is on, tabs jump
+  var tf=document.getElementById('tourF'), ti=[].slice.call(tf.querySelectorAll('.tour img')), tb=[].slice.call(tf.querySelectorAll('.tabs button')), tk=0, tt=null, tp=false;
+  var still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function tour(k){tk=k;ti.forEach(function(im,j){im.classList.toggle('show',j===k)});tb.forEach(function(b,j){b.setAttribute('aria-pressed',j===k?'true':'false')})}
+  tb.forEach(function(b,j){b.addEventListener('click',function(e){e.stopPropagation();tour(j);tp=true;clearInterval(tt);tt=null});b.addEventListener('touchend',function(e){e.stopPropagation()})});
+  setInterval(function(){var on=tf.classList.contains('on');if(on&&!tt&&!still&&!tp){tt=setInterval(function(){tour((tk+1)%ti.length)},2600)}if(!on&&tt){clearInterval(tt);tt=null}},400);
+  var m=/^#s(\d+)$/.exec(location.hash);show(m?parseInt(m[1],10)-1:0);
+})();
+</script>
+
+</body>
+</html>
