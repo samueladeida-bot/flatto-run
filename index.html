@@ -756,9 +756,14 @@ async function renderVideo(){
   const rec=new MediaRecorder(cv.captureStream(30),{mimeType:mime,videoBitsPerSecond:8e6}),chunks=[];
   rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
   const done=new Promise(r=>rec.onstop=r);rec.start(250);
-  const t0=performance.now(),tick=setInterval(()=>say(`Making your video… ${Math.max(0,Math.ceil(dur-(performance.now()-t0)/1000))} s`),500);
+  // The Share button fills up as the video records, so the wait reads as progress.
+  const btn=$('share'),t0=performance.now(),tick=setInterval(()=>{
+    const pc=Math.min(99,Math.round((performance.now()-t0)/(dur*10)));
+    btn.style.background=`linear-gradient(90deg,var(--sky) ${pc}%,transparent ${pc}%) left bottom/100% 6px no-repeat,var(--panel)`;btn.style.color='var(--fg)';
+    btn.textContent=`Making your video… ${pc}%`;
+  },100);say('');
   await new Promise(r=>{const end=()=>r();bgVideo.addEventListener('ended',end,{once:true});setTimeout(end,dur*1000)});
-  rec.stop();await done;clearInterval(tick);
+  rec.stop();await done;clearInterval(tick);btn.style.background='';btn.style.color='';
   const type=mime.split(';')[0];
   readyVideo=new File([new Blob(chunks,{type})],'flatto-run.'+(type==='video/mp4'?'mp4':'webm'),{type});videoKey=stateKey();
   bgVideo.loop=true;bgVideo.play().catch(()=>{});rendering=false;
