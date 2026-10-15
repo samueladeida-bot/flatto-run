@@ -138,6 +138,7 @@ canvas{max-width:280px}
 .steprow .ok{margin-left:auto;color:var(--sky);font-weight:700;font-size:13px}
 .steprow.has .ok{color:#8FD19E}
 .stats input{font-size:24px}
+.stats input::placeholder{color:#5A4D50}
 .stats b{font-size:24px}
 .stats label,.stats div{padding:8px 10px}
 #quickEmail{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px;font:500 14px var(--body);width:100%;margin-bottom:8px}
@@ -202,11 +203,11 @@ a{color:var(--sky)}
     <section class="step" id="runSection">
       <div class="stephead"><span class="n">1</span><b>Your run</b><label class="linkbtn" for="shot" id="sources">from a screenshot<input id="shot" type="file" accept="image/*" hidden></label></div>
       <div class="stats">
-        <label for="dist"><input id="dist" type="text" inputmode="decimal" value="8.42" aria-label="Distance in km"><span>KM</span></label>
-        <label for="time"><input id="time" type="text" inputmode="decimal" value="43:41" aria-label="Time"><span>TIME</span></label>
+        <label for="dist"><input id="dist" type="text" inputmode="decimal" value="" placeholder="0.00" aria-label="Distance in km"><span>KM</span></label>
+        <label for="time"><input id="time" type="text" inputmode="decimal" value="" placeholder="0:00" aria-label="Time"><span>TIME</span></label>
         <div><b id="paceOut">–</b><span>PACE /KM</span></div>
       </div>
-      <p class="hint" id="srcinfo">Tap a number to edit. For time, the , key types the colon.</p>
+      <p class="hint" id="srcinfo">Type your km and time, or fill them from a screenshot. For time, the , key types the colon.</p>
       <input id="num" type="number" min="1" value="1" hidden>
       <div class="level" hidden><span id="lvlText"></span><span class="bar"><i id="lvlBar"></i></span></div>
     </section>
@@ -294,7 +295,7 @@ function data(){
   const d=parseFloat($('dist').value.replace(',','.'))||0,t=parseTime($('time').value)||0,pace=d>0&&t>0?t/d:0;
   let pm=Math.floor(pace/60),ps=Math.round(pace%60);if(ps===60){pm++;ps=0}
   const n=Math.max(1,parseInt($('num').value)||1),tier=[...TIERS].reverse().find(([k])=>n>=k);
-  return{km:d,dist:d.toFixed(2),time:fmtTime(t),pace:pace?`${pm}:${String(ps).padStart(2,'0')}`:'–',num:String(n).padStart(2,'0'),n,tier:tier?tier[1]:null};
+  return{km:d,dist:d>0?d.toFixed(2):'--.--',time:t>0?fmtTime(t):'--:--',pace:pace?`${pm}:${String(ps).padStart(2,'0')}`:'–',num:String(n).padStart(2,'0'),n,tier:tier?tier[1]:null};
 }
 function level(){
   const n=data().n,next=TIERS.find(([k])=>n<k),prev=[...TIERS].reverse().find(([k])=>n>=k);
@@ -391,7 +392,7 @@ async function fetchBoard(period){
   if(profile){const from=periodStart(period),mine=store.get('flattoLog',[]).filter(r=>r.email===profile.email&&r.t>=from).reduce((a,r)=>a+r.km,0);if(mine>0)rows.push({first:profile.first,last:(profile.last||'')[0]||'',insta:profile.insta,km:mine,me:true})}
   return rows.sort((a,b)=>b.km-a.km);
 }
-let boardFull=false;
+let boardFull=false,boardTimer=null;
 async function showBoard(){
   const period=val('period'),ol=$('rank');
   try{
@@ -765,6 +766,7 @@ async function renderVideo(){
 }
 $('share').addEventListener('click',()=>{
   const d=data(),coffee=val('mode')==='coffee';
+  if(!coffee&&!$('hideNums').checked&&!(d.km>0)){say('Add your km and time first (step 1).');$('dist').focus();return}
   if(bgVideo){
     if(rendering)return;
     if(!readyVideo||videoKey!==stateKey()){renderVideo();return}
@@ -821,7 +823,7 @@ $('photo').addEventListener('change',e=>{
   }
   const img=new Image();img.onload=()=>{photo=img;ready();draw()};img.src=URL.createObjectURL(f);
 });
-document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',()=>{if(['dist','time'].includes(i.id)){runName='Your run';runId=null}draw()})});
+document.querySelectorAll('input').forEach(i=>{if(i.type!=='file'&&!['cid','csec'].includes(i.id))i.addEventListener('input',()=>{if(['dist','time'].includes(i.id)){runName='Your run';runId=null;clearTimeout(boardTimer);boardTimer=setTimeout(showBoard,500)}draw()})});
 photo.onload=draw;mascot.onload=draw;logoImg.onload=draw;
 setStyle(0);
 // ?render=<style>&color=sky|plum&drink=MATCHA&photo=cafe : shows only the story, for marketing shots.
@@ -832,7 +834,7 @@ if(RQ.get('render')){
   STYLES=MODES[m];styleIdx=Math.max(0,STYLES.indexOf(st));
   const col={sky:'#CFE3F3',plum:'#4C2F31'}[RQ.get('color')];if(col)document.querySelector(`input[name=color][value="${col}"]`).checked=true;
   if(RQ.get('drink'))document.querySelector(`input[name=drink][value="${RQ.get('drink')}"]`).checked=true;
-  $('num').value=RQ.get('num')||'7';
+  $('num').value=RQ.get('num')||'7';if(!$('dist').value)$('dist').value='8.42';if(!$('time').value)$('time').value='43:41';
   if(RQ.get('bg')){const im=new Image();im.onload=()=>{photo=im;draw()};im.src=RQ.get('bg')}
 }
 const shot=RQ.get('shot');if(shot)addEventListener('load',()=>setTimeout(()=>{const el=document.getElementById(shot);if(el)el.scrollIntoView({block:'start'})},300));
