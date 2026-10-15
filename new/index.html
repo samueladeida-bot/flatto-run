@@ -873,6 +873,52 @@ function draw(only){
     drawMascot(W-240,150,380);
     text(`SESEH  ·  BALI  ·  RUN #${d.num}`,W/2,1500,'800 42px Inter',ink,'center',3);
     scriptLogo(W/2,1660,130,ink);text(HANDLE,W/2,1750,'800 36px Inter',ink,'center',3);
+  }else if(st==='medal'){
+    // Finisher medal: ribbon, gold disc, km at the centre.
+    ctx.shadowBlur=0;ctx.shadowColor='transparent';
+    const cx=W/2,cy=1010,rr=270;
+    ctx.fillStyle='#4C2F31';ctx.beginPath();ctx.moveTo(cx-230,330);ctx.lineTo(cx-90,330);ctx.lineTo(cx+10,cy-rr+40);ctx.lineTo(cx-120,cy-rr+60);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#CFE3F3';ctx.beginPath();ctx.moveTo(cx+230,330);ctx.lineTo(cx+90,330);ctx.lineTo(cx-10,cy-rr+40);ctx.lineTo(cx+120,cy-rr+60);ctx.closePath();ctx.fill();
+    ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=30;ctx.fillStyle='#C9A24A';ctx.beginPath();ctx.arc(cx,cy,rr,0,7);ctx.fill();ctx.shadowBlur=0;ctx.shadowColor='transparent';
+    ctx.fillStyle='#E4C474';ctx.beginPath();ctx.arc(cx,cy,rr-26,0,7);ctx.fill();
+    ctx.strokeStyle='#A8822F';ctx.lineWidth=6;ctx.beginPath();ctx.arc(cx,cy,rr-46,0,7);ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);arcText('FLATTO RUN CLUB',rr-92,true,'800 40px Inter','#4C2F31');arcText('SESEH · BALI',rr-92,false,'800 34px Inter','#4C2F31');
+    text('FINISHER',0,-82,'800 28px Inter','#4C2F31','center',6);fitText(d.dist,0,52,'Anton',128,260,'#4C2F31');text('KILOMETRES',0,104,'800 24px Inter','#4C2F31','center',5);ctx.restore();
+    ctx.shadowColor=c==='#4C2F31'?'rgba(255,255,255,.25)':'rgba(0,0,0,.35)';ctx.shadowBlur=18;
+    text(`${d.time}  ·  ${d.pace} /KM  ·  RUN #${d.num}`,W/2,1380,'800 42px Inter',c,'center',3);
+    scriptLogo(W/2,1540,130,c);footer(1630,c,d);
+  }else if(st==='postcard'){
+    // Vintage postcard: "Greetings from SESEH" with the run as the caption and a Flatto stamp.
+    ctx.save();ctx.translate(W/2,1010);ctx.rotate(-.03);
+    ctx.font='110px Yellowtail';ctx.fillStyle=c;ctx.textAlign='center';ctx.fillText('Greetings from',0,-260);
+    ctx.lineJoin='round';ctx.font='400 330px Anton';ctx.lineWidth=22;ctx.strokeStyle=c==='#4C2F31'?'#F4EEDC':'#4C2F31';ctx.strokeText('SESEH',0,90);ctx.fillStyle=c;ctx.fillText('SESEH',0,90);
+    text(`${d.dist} KM  ·  ${d.time}  ·  ${d.pace} /KM`,0,190,'800 46px Inter',c,'center',4);
+    ctx.restore();
+    ctx.save();ctx.translate(W-210,420);ctx.rotate(.08);ctx.shadowBlur=0;ctx.fillStyle='#F4EEDC';ctx.fillRect(-120,-150,240,300);
+    ctx.setLineDash([10,8]);ctx.strokeStyle='#4C2F31';ctx.lineWidth=4;ctx.strokeRect(-104,-134,208,268);ctx.setLineDash([]);
+    if(tintLogo('#4C2F31')){const t=tintLogo('#4C2F31'),lw=170,lh=lw*t.height/t.width;ctx.drawImage(t,-lw/2,-60,lw,lh)}
+    text('RUN #'+d.num,0,90,'800 30px Inter','#4C2F31','center',3);ctx.restore();
+    drawMascot(260,1330,420);footer(1640,c,d);
+  }else if(st==='mag'||st==='c-mag'){
+    // Running-magazine cover: masthead, issue line, cover lines.
+    const coffee2=st==='c-mag',drink=val('drink');
+    fitText('FLATTO',W/2,420,'Anton',330,W-120,c);
+    ctx.fillStyle=c;ctx.fillRect(70,450,W-140,5);
+    text(`SESEH ISSUE  ·  ${ds}  ·  ${coffee2?'COFFEE':'RUN #'+d.num}`,W/2,505,'800 30px Inter',c,'center',5);
+    if(coffee2){
+      fitText(drink,80+((W-160)/2),1300,'Anton',170,W-160,c);
+      text('THE COFFEE ISSUE',80,1380,'800 44px Inter',c,'left',3);text('Why Seseh starts here',80,1440,'600 38px Inter',c,'left');
+    }else{
+      ctx.textAlign='left';ctx.font='400 260px Anton';ctx.fillStyle=c;ctx.fillText(d.dist,74,1280);const bw=ctx.measureText(d.dist).width;text('KM',84+bw,1280,'400 90px Anton',c,'left');
+      text(`${d.time}  ·  ${d.pace} /KM`,80,1360,'800 48px Inter',c,'left',3);
+      text('EXCLUSIVE',80,1450,'800 30px Inter',c,'left',6);text('The post-run coffee at Flatto',80,1505,'600 40px Inter',c,'left');
+    }
+    drawMascot(W-260,1560,380);text(HANDLE,80,1740,'800 32px Inter',c,'left',3);
+  }else if(st==='mini'){
+    // Minimal: one discreet line at the bottom, the photo does the talking.
+    scriptLogo(W/2,1600,100,c);
+    text(`${d.dist} KM  ·  ${d.time}  ·  ${d.pace} /KM`,W/2,1700,'800 38px Inter',c,'center',4);
+    const bits=storyBits(d);if(bits.length)text(bits.join('  ·  '),W/2,1755,'800 24px Inter',c,'center',4);
   }else if(st==='c-receipt'){
     const drink=val('drink');drawReceipt(c,[['1x',drink],['VIBES','100%'],['VIEW','RICE FIELDS'],['WIFI','STRONG']],greeting(),'SEE YOU TOMORROW');
   }else if(st==='c-stamp'){
@@ -930,12 +976,12 @@ function shareLabel(){
   $('share').classList.toggle('wait',nowWait);if(wasWait&&!nowWait){$('share').classList.remove('ready');void $('share').offsetWidth;$('share').classList.add('ready')}
   if(bgVideo)return;const km=data().km;$('share').textContent=$('share').classList.contains('wait')?'Add your run to share':profile&&val('mode')==='run'&&km>0?`Share to Instagram · +${km.toFixed(1)} km`:'Share to Instagram'}
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
-const MODES={run:['big','receipt','stamp','tee','mascot','polaroid','classic','bib'],coffee:['c-receipt','c-stamp','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
+const MODES={run:['big','receipt','stamp','medal','mag','postcard','tee','mascot','polaroid','mini','classic','bib'],coffee:['c-receipt','c-stamp','c-mag','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
 let STYLES=MODES.run,styleIdx=0;
 document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';$('hideWrap').hidden=m!=='run';$('shareStep').hidden=m!=='run'||!!profile;$('orderSection').hidden=m!=='coffee';setStyle(0)}));
 document.querySelectorAll('input[name=drink]').forEach(i=>i.addEventListener('change',draw));
 $('hideNums').addEventListener('change',()=>{STYLES=MODES[$('hideNums').checked?'secret':'run'];setStyle(0)});
-const STYLE_NAMES={big:'Big number',receipt:'Receipt',stamp:'Stamp',tee:'Club tee',mascot:'Lost in Seseh',polaroid:'Polaroid',classic:'Classic',bib:'Race bib','s-big':'Run done','s-receipt':'Secret receipt','s-stamp':'Stamp','s-mascot':'Coffee now','s-polaroid':'Polaroid','c-receipt':'Receipt','c-stamp':'Stamp','c-logo':'Logo','c-tee':'Club tee','c-mascot':"O'clock",'c-polaroid':'Polaroid'};
+const STYLE_NAMES={medal:'Medal',postcard:'Postcard',mag:'Magazine',mini:'Minimal','c-mag':'Magazine',big:'Big number',receipt:'Receipt',stamp:'Stamp',tee:'Club tee',mascot:'Lost in Seseh',polaroid:'Polaroid',classic:'Classic',bib:'Race bib','s-big':'Run done','s-receipt':'Secret receipt','s-stamp':'Stamp','s-mascot':'Coffee now','s-polaroid':'Polaroid','c-receipt':'Receipt','c-stamp':'Stamp','c-logo':'Logo','c-tee':'Club tee','c-mascot':"O'clock",'c-polaroid':'Polaroid'};
 function setStyle(i){
   styleIdx=(i+STYLES.length)%STYLES.length;const box=$('dots');box.innerHTML='';
   STYLES.forEach((st,k)=>{const b=document.createElement('button');b.type='button';b.className=k===styleIdx?'on':'';b.setAttribute('aria-pressed',k===styleIdx);b.setAttribute('aria-label',STYLE_NAMES[st]||st);
