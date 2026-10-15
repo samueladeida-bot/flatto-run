@@ -160,7 +160,7 @@ a{color:var(--sky)}
     <div class="level"><span id="lvlText">Run 1 at Flatto</span><span class="bar"><i id="lvlBar" style="width:0"></i></span></div>
   </section>
 
-  <section id="orderSection">
+  <section id="orderSection" hidden>
     <h2>Your order <small>FROM THE MENU</small></h2>
     <div class="chips">
       <label class="chip"><input type="radio" name="drink" value="LATTE" checked><span>Latte</span></label>
@@ -535,7 +535,7 @@ function draw(){
     [['KM',d.dist],['PACE',d.pace],['TIME',d.time]].forEach(([l,v],i)=>{const cx=x+w*(i*2+1)/6;text(l,cx,y+640,'600 30px Inter',c,'center',5);text(v,cx,y+720,'800 68px Inter',c)});
     scriptLogo(W/2,y+h-50,110,c);footer(y+h+80,c,d);
   }else if(st==='receipt'){
-    drawReceipt(c,[['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]],`1 ${val('drink')}`,myBit(d)||d.tier||'THANK YOU, RUNNER');
+    drawReceipt(c,[['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]],'1 POST-RUN COFFEE',myBit(d)||d.tier||'THANK YOU, RUNNER');
   }else if(st==='stamp'){
     scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
     drawStamp(c,'FLATTO RUN CLUB',`SESEH · BALI · ${now.getFullYear()}`,d.dist,'KILOMETRES');
@@ -569,7 +569,7 @@ function draw(){
     ctx.fillStyle=c;ctx.fillRect(80,1590,W-160,6);
     text('COFFEE NOW',80,1680,'800 48px Inter',c,'left',2);text('RUN #'+d.num,W-80,1680,'800 48px Inter',c,'right',2);
   }else if(st==='s-receipt'){
-    drawReceipt(c,[['1x','MORNING RUN'],['DISTANCE','SECRET'],['PACE','ALSO SECRET'],['FUEL',val('drink')]],'RUN DONE',d.tier||'NUMBERS STAY WITH US');
+    drawReceipt(c,[['1x','MORNING RUN'],['DISTANCE','SECRET'],['PACE','ALSO SECRET'],['FUEL','COFFEE']],'RUN DONE',d.tier||'NUMBERS STAY WITH US');
   }else if(st==='s-stamp'){
     scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
     drawStamp(c,'FLATTO RUN CLUB',`SESEH · BALI · ${now.getFullYear()}`,'DONE','RUN #'+d.num);
@@ -625,7 +625,7 @@ function draw(){
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const MODES={run:['big','receipt','stamp','tee','mascot','polaroid','classic','bib'],coffee:['c-receipt','c-stamp','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
 let STYLES=MODES.run,styleIdx=0;
-document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';setStyle(0)}));
+document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';$('orderSection').hidden=m!=='coffee';setStyle(0)}));
 document.querySelectorAll('input[name=drink]').forEach(i=>i.addEventListener('change',draw));
 $('hideNums').addEventListener('change',()=>{STYLES=MODES[$('hideNums').checked?'secret':'run'];setStyle(0)});
 function setStyle(i){styleIdx=(i+STYLES.length)%STYLES.length;$('dots').innerHTML=STYLES.map((_,k)=>`<i class="${k===styleIdx?'on':''}"></i>`).join('');draw()}
