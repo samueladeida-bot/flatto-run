@@ -144,15 +144,6 @@ a{color:var(--sky)}
     </div>
   </div>
 
-  <section id="coffeeSection" hidden>
-    <h2>Your order</h2>
-    <div class="chips">
-      <label class="chip"><input type="radio" name="drink" value="FLAT WHITE" checked><span>Flat white</span></label>
-      <label class="chip"><input type="radio" name="drink" value="ICED LATTE"><span>Iced latte</span></label>
-      <label class="chip"><input type="radio" name="drink" value="MATCHA"><span>Matcha</span></label>
-      <label class="chip"><input type="radio" name="drink" value="COLD BREW"><span>Cold brew</span></label>
-    </div>
-  </section>
 
   <section id="runSection">
     <h2>Your run</h2>
@@ -167,6 +158,18 @@ a{color:var(--sky)}
     <input id="num" type="number" min="1" value="1" hidden>
     <div class="chips" style="margin-top:12px"><label class="chip"><input type="checkbox" id="hideNums"><span>Hide my numbers on the story</span></label></div>
     <div class="level"><span id="lvlText">Run 1 at Flatto</span><span class="bar"><i id="lvlBar" style="width:0"></i></span></div>
+  </section>
+
+  <section id="orderSection">
+    <h2>Your order <small>FROM THE MENU</small></h2>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="drink" value="LATTE" checked><span>Latte</span></label>
+      <label class="chip"><input type="radio" name="drink" value="MATCHA LATTE"><span>Matcha latte</span></label>
+      <label class="chip"><input type="radio" name="drink" value="ESPRESSO TONIC"><span>Espresso tonic</span></label>
+      <label class="chip"><input type="radio" name="drink" value="SESEH SHAKE"><span>Seseh shake</span></label>
+      <label class="chip"><input type="radio" name="drink" value="BLUEBERRY RECOVERY"><span>Blueberry recovery</span></label>
+      <label class="chip"><input type="radio" name="drink" value="FRESH COCONUT"><span>Fresh coconut</span></label>
+    </div>
   </section>
 
   <div class="cta">
@@ -525,7 +528,7 @@ function draw(){
     [['KM',d.dist],['PACE',d.pace],['TIME',d.time]].forEach(([l,v],i)=>{const cx=x+w*(i*2+1)/6;text(l,cx,y+640,'600 30px Inter',c,'center',5);text(v,cx,y+720,'800 68px Inter',c)});
     scriptLogo(W/2,y+h-50,110,c);footer(y+h+80,c,d);
   }else if(st==='receipt'){
-    drawReceipt(c,[['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]],'1 FLAT WHITE',myBit(d)||d.tier||'THANK YOU, RUNNER');
+    drawReceipt(c,[['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]],`1 ${val('drink')}`,myBit(d)||d.tier||'THANK YOU, RUNNER');
   }else if(st==='stamp'){
     scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
     drawStamp(c,'FLATTO RUN CLUB',`SESEH · BALI · ${now.getFullYear()}`,d.dist,'KILOMETRES');
@@ -602,7 +605,7 @@ function draw(){
     ctx.save();ctx.translate(W/2,830);ctx.rotate(-.05);ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=40;ctx.shadowOffsetY=14;
     ctx.fillStyle='#FFFFFF';ctx.fillRect(-410,-520,820,1020);ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
     coverRect(bgMedia(),-370,-480,740,780);
-    ctx.font='96px Yellowtail';ctx.fillStyle='#4C2F31';ctx.textAlign='center';ctx.fillText(`${drink} o'clock`,0,420);
+    ctx.fillStyle='#4C2F31';ctx.textAlign='center';{const cap=`${drink} o'clock`;ctx.font='96px Yellowtail';const cw=ctx.measureText(cap).width;if(cw>700)ctx.font=`${96*700/cw}px Yellowtail`;ctx.fillText(cap,0,420)}
     ctx.restore();
     drawMascot(W-240,150,380);
     text(`SESEH  ·  BALI  ·  ${ds}`,W/2,1500,'800 42px Inter',ink,'center',3);
@@ -614,7 +617,7 @@ function draw(){
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const MODES={run:['big','receipt','stamp','tee','mascot','polaroid','classic','bib'],coffee:['c-receipt','c-stamp','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
 let STYLES=MODES.run,styleIdx=0;
-document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';$('coffeeSection').hidden=m!=='coffee';setStyle(0)}));
+document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';setStyle(0)}));
 document.querySelectorAll('input[name=drink]').forEach(i=>i.addEventListener('change',draw));
 $('hideNums').addEventListener('change',()=>{STYLES=MODES[$('hideNums').checked?'secret':'run'];setStyle(0)});
 function setStyle(i){styleIdx=(i+STYLES.length)%STYLES.length;$('dots').innerHTML=STYLES.map((_,k)=>`<i class="${k===styleIdx?'on':''}"></i>`).join('');draw()}
