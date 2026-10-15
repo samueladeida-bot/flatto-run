@@ -470,6 +470,11 @@ const myBit=d=>profile?`${((profile.total||0)+d.km).toFixed(1)} KM WITH FLATTO`:
 function storyBits(d){const b=[];if(myBit(d))b.push(myBit(d));if(d.tier)b.push(d.tier);return b}
 
 function drawReceipt(c,rows,total,note){
+  // Drawn at full size, then shrunk and tilted into the lower part of the story so the photo stays visible.
+  ctx.save();ctx.translate(W/2+40,1390);ctx.rotate(-.05);ctx.scale(.6,.6);ctx.translate(-W/2,-950);
+  try{return drawReceiptBody(c,rows,total,note)}finally{ctx.restore()}
+}
+function drawReceiptBody(c,rows,total,note){
   const x=170,y=430,w=W-340,h=1040,ink='#4C2F31',mono='"Space Mono","Courier New",monospace',L=x+60,R=x+w-60,now=new Date();
   const ds=[now.getDate(),now.getMonth()+1].map(n=>String(n).padStart(2,'0')).join('.')+'.'+String(now.getFullYear()).slice(2),hm=now.toTimeString().slice(0,5);
   ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=36;ctx.fillStyle='#F7F2E6';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);
