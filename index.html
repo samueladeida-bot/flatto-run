@@ -508,6 +508,8 @@ function draw(){
   const now=new Date(),ds=[now.getDate(),now.getMonth()+1].map(n=>String(n).padStart(2,'0')).join('.')+'.'+String(now.getFullYear()).slice(2),hm=now.toTimeString().slice(0,5);
   if(st.endsWith('polaroid')){ctx.fillStyle=c==='#FFFFFF'?'#F4EEDC':c;ctx.fillRect(0,0,W,H)}else if(mw(bgMedia()))cover(bgMedia());
   ctx.shadowColor=c==='#4C2F31'?'rgba(255,255,255,.25)':'rgba(0,0,0,.35)';ctx.shadowBlur=18;
+  // Overlays sit at 85% around the centre so the photo breathes; receipts are already shrunk on their own.
+  const OVERLAY=st.includes('receipt')?1:.85;ctx.save();ctx.translate(W/2,H/2);ctx.scale(OVERLAY,OVERLAY);ctx.translate(-W/2,-H/2);
   if(st==='classic'){
     drawMascot(W/2,120,520);
     let y=560;
@@ -616,6 +618,7 @@ function draw(){
     text(`SESEH  ·  BALI  ·  ${ds}`,W/2,1500,'800 42px Inter',ink,'center',3);
     scriptLogo(W/2,1660,130,ink);text(HANDLE,W/2,1750,'800 36px Inter',ink,'center',3);
   }
+  ctx.restore();
   ctx.shadowColor='transparent';ctx.shadowBlur=0;
   if(!bgVideo)queueBlob();
 }
