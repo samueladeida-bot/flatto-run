@@ -9,7 +9,7 @@
 /* Flatto v3 — light, menu-board look: ecru paper, white cards, plum ink, sky accents.
    Layout: one column, story first, two tabs (Post / Board), a share bar pinned to the bottom. */
 :root{
-  --paper:#F5F0E5; --card:#FFFFFF; --ink:#2B1A1C; --plum:#4C2F31; --muted:#8C7C73; --line:#E7DECD; --soft:#EFE8DA;
+  --paper:#F5F0E5; --card:#FFFFFF; --ink:#2B1A1C; --plum:#4C2F31; --muted:#6F6058; --line:#E7DECD; --soft:#EFE8DA;
   --sky:#CFE3F3; --sky-ink:#244A66; --ok:#2F7D4F; --warn:#B4532F;
   --display:Anton, Impact, "Arial Narrow", sans-serif;
   --script:Yellowtail, "Brush Script MT", cursive;
@@ -194,6 +194,19 @@ canvas.swap{animation:swap .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes glow{0%{box-shadow:0 0 0 0 rgba(76,47,49,.55)}100%{box-shadow:0 0 0 14px rgba(76,47,49,0),0 10px 24px rgba(76,47,49,.3)}}
 @media (prefers-reduced-motion:reduce){canvas.swap,.step.is-done .n,#share.ready{animation:none}}
 
+/* 44px touch targets (Apple HIG) */
+.top .tabs button{min-height:40px}
+.styles button{min-height:44px;padding:0 15px}
+.swatches label{display:grid;place-items:center;width:44px;height:44px}
+.swatches i{width:30px;height:30px}
+.tog span{min-height:44px;padding:0 13px}
+.modepill span{min-height:36px;display:flex;align-items:center}
+.nav{width:44px;height:44px}
+.linkbtn{padding:10px 0}
+.stephead .linkbtn{padding:10px 0;margin-block:-10px}
+.mebtns .ghost{min-height:40px}
+
+.joincta{display:block;width:100%;margin-top:14px;border:0;border-radius:14px;padding:15px;background:var(--plum);color:#F4EEDC;font-weight:800;font-size:15px}
 /* marketing renders: story only */
 body.render{padding:0;background:#000}
 body.render .wrap{max-width:none;gap:0}
@@ -291,6 +304,7 @@ body.render .nav,body.render .sharebar,body.render .modepill{display:none!import
       <p class="hint" id="boardNote">Start at Flatto, finish at Flatto. Ranked by distance, not speed.</p>
       <ol class="rank" id="rank"></ol>
       <button type="button" class="linkbtn" id="fullBoard" style="display:block;margin:12px auto 0">See full board</button>
+      <button type="button" class="joincta" id="boardJoin" hidden>Post your run to join the board</button>
       <div class="mecard" id="meCard" hidden>
         <div><b id="meTotal">0.0</b><span>KM WITH FLATTO</span></div>
         <p id="meHello"></p>
@@ -482,11 +496,11 @@ function setProfile(p){
 let editing=false;
 function renderMe(){
   if(editing)return;
-  $('meCard').hidden=!profile;$('join').hidden=true;
-  $('shareStep').hidden=!!profile;
+  $('meCard').hidden=!profile;$('join').hidden=true;$('boardJoin').hidden=!!profile;
+  $('shareStep').hidden=!!profile||val('mode')!=='run';
   $('boardMe').hidden=!(profile&&profile.weekRank);if(profile&&profile.weekRank){$('boardMeText').textContent=profile.weekRank===1?`You lead this week, ${profile.first}.`:`You're #${profile.weekRank} · ${profile.weekGap.toFixed(1)} km behind ${profile.weekAhead}`;$('boardMeRank').textContent='#'+profile.weekRank}
   $('hdrMe').textContent=profile?`${profile.first} · ${(profile.total||0).toFixed(0)} km`:'';
-  $('back').hidden=!profile;
+  $('back').hidden=!profile;$('tagline').hidden=!!profile;
   if(!profile)return;
   $('backName').textContent=`Welcome back, ${profile.first}`;
   $('backStreak').textContent=profile.streak>1?`🔥 ${profile.streak}-week streak · keep it alive`:'Post this week to start a streak';
@@ -794,7 +808,7 @@ function shareLabel(){
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const MODES={run:['big','receipt','stamp','tee','mascot','polaroid','classic','bib'],coffee:['c-receipt','c-stamp','c-logo','c-tee','c-mascot','c-polaroid'],secret:['s-big','s-receipt','s-stamp','s-mascot','s-polaroid']};
 let STYLES=MODES.run,styleIdx=0;
-document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';$('hideWrap').hidden=m!=='run';$('orderSection').hidden=m!=='coffee';setStyle(0)}));
+document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';$('hideWrap').hidden=m!=='run';$('shareStep').hidden=m!=='run'||!!profile;$('orderSection').hidden=m!=='coffee';setStyle(0)}));
 document.querySelectorAll('input[name=drink]').forEach(i=>i.addEventListener('change',draw));
 $('hideNums').addEventListener('change',()=>{STYLES=MODES[$('hideNums').checked?'secret':'run'];setStyle(0)});
 const STYLE_NAMES={big:'Big number',receipt:'Receipt',stamp:'Stamp',tee:'Club tee',mascot:'Lost in Seseh',polaroid:'Polaroid',classic:'Classic',bib:'Race bib','s-big':'Run done','s-receipt':'Secret receipt','s-stamp':'Stamp','s-mascot':'Coffee now','s-polaroid':'Polaroid','c-receipt':'Receipt','c-stamp':'Stamp','c-logo':'Logo','c-tee':'Club tee','c-mascot':"O'clock",'c-polaroid':'Polaroid'};
@@ -860,8 +874,10 @@ $('share').addEventListener('click',()=>{
     return;
   }
   if(!readyBlob){say('One second, your story is getting ready. Tap Share again.');draw();return}
+  // Keep the prepared image: signing up below redraws the page, which clears readyBlob.
+  const blob=readyBlob;
   claimFromEmail();
-  const file=new File([readyBlob],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'});
+  const file=new File([blob],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'});
   // Count at the tap: once iOS hands off to Instagram, Safari may never hear back from the share sheet.
   const counted=coffee||recordPost(d);
   say(counted?'Show your story at the counter.':'Add your email in step 3 so your km count.');
@@ -869,7 +885,7 @@ $('share').addEventListener('click',()=>{
   if(navigator.canShare&&navigator.canShare({files:[file]})){
     navigator.share({files:[file]}).catch(e=>{if(e.name!=='AbortError')say("Sharing didn't open. Press and hold the story below to save it.")});
   }else{
-    const out=$('out');out.src=URL.createObjectURL(readyBlob);out.hidden=false;
+    const out=$('out');out.src=URL.createObjectURL(blob);out.hidden=false;
     say('Press and hold the story below, then Save to Photos and post it from Instagram.');
   }
 });
@@ -883,18 +899,20 @@ function claimFromEmail(){
 let doneKm=0;
 function showDone(d,coffee){
   doneKm=coffee?0:d.km;store.set('flattoSeen',true);
+  $('done').querySelector('h2').textContent=coffee?'Posted. Enjoy your coffee.':'Posted. Nice run.';
   setTimeout(()=>{$('scrim').hidden=false;$('done').hidden=false;fillDone()},600);
 }
 function fillDone(){
   if($('done').hidden)return;
   $('donePlus').textContent=doneKm?`+${doneKm.toFixed(1)} KM`:'☕';
+  if(!doneKm){$('doneRank').textContent='Next time, post your run and climb the Flatto board.';$('doneStreak').textContent='';return}
   $('doneRank').textContent=!profile?'Add your email next time to climb the Flatto board.':profile.weekRank?(profile.weekRank===1?"You're #1 this week. Hold it.":`You're #${profile.weekRank} this week · ${profile.weekGap.toFixed(1)} km behind ${profile.weekAhead}`):'';
   $('doneStreak').textContent=profile&&profile.streak?`🔥 ${profile.streak}-week streak · see you next week`:'';
 }
 const closeDone=()=>{$('done').hidden=true;$('scrim').hidden=true};$('again').addEventListener('click',closeDone);$('scrim').addEventListener('click',closeDone);
 // Post / Board tabs; the share bar belongs to Post.
 function showTab(board){$('viewPost').hidden=board;$('viewBoard').hidden=!board;$('shareBar').hidden=board;$('tabPost').classList.toggle('on',!board);$('tabBoard').classList.toggle('on',board);$('tabPost').setAttribute('aria-selected',!board);$('tabBoard').setAttribute('aria-selected',board);if(board)showBoard();window.scrollTo({top:0})}
-$('tabPost').addEventListener('click',()=>showTab(false));$('tabBoard').addEventListener('click',()=>showTab(true));
+$('tabPost').addEventListener('click',()=>showTab(false));$('boardJoin').addEventListener('click',()=>{showTab(false);setTimeout(()=>{$('runSection').scrollIntoView({behavior:'smooth',block:'center'})},50)});$('tabBoard').addEventListener('click',()=>showTab(true));
 $('welcomeX').addEventListener('click',()=>{store.set('flattoSeen',true);$('welcome').hidden=true});
 $('fullBoard').addEventListener('click',()=>{boardFull=!boardFull;showBoard()});
 $('photo').addEventListener('change',e=>{
