@@ -258,6 +258,12 @@ canvas.swap{animation:swap .28s cubic-bezier(.2,.8,.2,1)}
 .confetti{position:fixed;inset:0;width:100vw;height:100vh;z-index:40;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.step.next .n{animation:none}}
 
+/* iOS Safari: inputs under 16px make Safari zoom the page on focus */
+input,select,textarea{font-size:16px!important}
+.stats input{font-size:28px!important}
+/* the share bar steps aside while the keyboard is up */
+body.typing .sharebar{display:none}
+
 /* marketing renders: story only */
 body.render{padding:0;background:#000}
 body.render .wrap{max-width:none;gap:0}
@@ -872,7 +878,7 @@ function draw(only){
 }
 // Style miniatures: each style drawn small with the runner's own photo and numbers, refreshed shortly after changes.
 let thumbTimer=null;
-function queueThumbs(){clearTimeout(thumbTimer);thumbTimer=setTimeout(renderThumbs,bgVideo?1500:350)}
+function queueThumbs(){clearTimeout(thumbTimer);thumbTimer=setTimeout(renderThumbs,bgVideo?2500:700)}
 function renderThumbs(){
   const box=$('dots');if(!box||document.body.classList.contains('render'))return;
   [...box.querySelectorAll('canvas')].forEach((tc,k)=>{
@@ -913,7 +919,7 @@ let sx=null,sy=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clie
 /* ---------- share ---------- */
 // The story PNG is prepared after every redraw, so the tap on Share opens the share sheet right away (Safari needs that).
 let readyBlob=null,blobTimer=null,bgVideo=null,readyVideo=null,videoKey='',rendering=false;
-function queueBlob(){readyBlob=null;clearTimeout(blobTimer);blobTimer=setTimeout(()=>cv.toBlob(b=>{readyBlob=b},'image/png'),120)}
+function queueBlob(){readyBlob=null;clearTimeout(blobTimer);blobTimer=setTimeout(()=>cv.toBlob(b=>{readyBlob=b},'image/jpeg',.92),350)}
 // Instagram can't be told to tag an account, so @flatto.bali goes to the clipboard and Aa > Paste in the story makes it a mention.
 // Safari only allows copying during a tap and not on the Share tap itself, so it rides along with the taps before it
 // (the first tap anywhere, and again on "Add your photo or video").
@@ -964,7 +970,7 @@ $('share').addEventListener('click',()=>{
   // Keep the prepared image: signing up below redraws the page, which clears readyBlob.
   const blob=readyBlob;
   claimFromEmail();
-  const file=new File([blob],coffee?'flatto-coffee.png':'flatto-run.png',{type:'image/png'});
+  const file=new File([blob],coffee?'flatto-coffee.jpg':'flatto-run.jpg',{type:'image/jpeg'});
   // Count at the tap: once iOS hands off to Instagram, Safari may never hear back from the share sheet.
   const counted=coffee||recordPost(d);
   say(counted?'Show your story at the counter.':'Add your email in step 3 so your km count.');
@@ -1011,6 +1017,9 @@ const closeDone=()=>{$('done').hidden=true;$('scrim').hidden=true};$('again').ad
 function showTab(board){$('viewPost').hidden=board;$('viewBoard').hidden=!board;$('shareBar').hidden=board;$('tabPost').classList.toggle('on',!board);$('tabBoard').classList.toggle('on',board);$('tabPost').setAttribute('aria-selected',!board);$('tabBoard').setAttribute('aria-selected',board);if(board)showBoard();window.scrollTo({top:0})}
 $('tabPost').addEventListener('click',()=>showTab(false));$('boardJoin').addEventListener('click',()=>{showTab(false);setTimeout(()=>{$('runSection').scrollIntoView({behavior:'smooth',block:'center'})},50)});$('tabBoard').addEventListener('click',()=>showTab(true));
 $('welcomeX').addEventListener('click',()=>{store.set('flattoSeen',true);$('welcome').hidden=true});
+// iOS keeps fixed bars above the keyboard, covering the field being typed in.
+document.addEventListener('focusin',e=>{if(e.target.matches('input[type=text],input[type=email],input[type=number]'))document.body.classList.add('typing')});
+document.addEventListener('focusout',()=>setTimeout(()=>{if(!document.activeElement||!document.activeElement.matches('input[type=text],input[type=email],input[type=number]'))document.body.classList.remove('typing')},50));
 document.querySelectorAll('#quickKm button').forEach(b=>b.addEventListener('click',()=>{const el=$('dist');el.value=Number(b.dataset.km).toFixed(2);el.dispatchEvent(new Event('input'));$('time').focus()}));
 $('dist').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('time').focus()}});
 $('time').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('time').blur()}});
