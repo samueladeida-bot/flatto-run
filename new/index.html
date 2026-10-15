@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Flatto Run Story</title>
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F5F0E5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Flatto">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yellowtail&family=Anton&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Inter:wght@500;600;800&display=swap">
 <style>
 /* Flatto v3 — light, menu-board look: ecru paper, white cards, plum ink, sky accents.
@@ -245,6 +250,14 @@ canvas.swap{animation:swap .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes shimmer{to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.step.reading .stats label,.step.reading .stats div{animation:none}}
 
+.quickkm{display:flex;gap:6px;margin-top:10px}
+.quickkm button{flex:1;min-height:44px;border:1px solid var(--line);background:var(--card);border-radius:12px;font-weight:700;font-size:13px;color:var(--ink);transition:all .15s}
+.quickkm button:active{background:var(--ink);color:#F4EEDC}
+.step.next .n{animation:nudge 1.6s ease-in-out infinite;background:var(--plum);color:#F4EEDC}
+@keyframes nudge{0%,100%{box-shadow:0 0 0 0 rgba(76,47,49,.4)}50%{box-shadow:0 0 0 8px rgba(76,47,49,0)}}
+.confetti{position:fixed;inset:0;width:100vw;height:100vh;z-index:40;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.step.next .n{animation:none}}
+
 /* marketing renders: story only */
 body.render{padding:0;background:#000}
 body.render .wrap{max-width:none;gap:0}
@@ -297,11 +310,14 @@ body.render .nav,body.render .sharebar,body.render .modepill{display:none!import
       <section class="step" id="runSection">
         <div class="stephead"><span class="n">1</span><b>Your run</b><label class="linkbtn" for="shot" id="sources">Use a screenshot<input id="shot" type="file" accept="image/*" hidden></label></div>
         <div class="stats">
-          <label for="dist"><input id="dist" type="text" inputmode="decimal" value="" placeholder="0.00" aria-label="Distance in km"><span>KM</span></label>
-          <label for="time"><input id="time" type="text" inputmode="decimal" value="" placeholder="0:00" aria-label="Time"><span>TIME</span></label>
+          <label for="dist"><input id="dist" type="text" inputmode="decimal" enterkeyhint="next" value="" placeholder="0.00" aria-label="Distance in km"><span>KM</span></label>
+          <label for="time"><input id="time" type="text" inputmode="decimal" enterkeyhint="done" value="" placeholder="0:00" aria-label="Time"><span>TIME</span></label>
           <div><b id="paceOut">–</b><span>PACE /KM</span></div>
         </div>
-        <p class="hint" id="srcinfo">Type it, or read it from a screenshot of Strava, Garmin, Apple Fitness or Whoop.</p>
+        <div class="quickkm" id="quickKm" role="group" aria-label="Quick distance">
+          <button type="button" data-km="3">3 km</button><button type="button" data-km="5">5 km</button><button type="button" data-km="8">8 km</button><button type="button" data-km="10">10 km</button><button type="button" data-km="21.1">21.1</button>
+        </div>
+        <p class="hint" id="srcinfo">Tap a distance or type yours, then your time. Got a screenshot from Strava, Garmin or your watch? Use it above.</p>
         <input id="num" type="number" min="1" value="1" hidden>
         <div class="level" hidden><span id="lvlText"></span><span class="bar"><i id="lvlBar"></i></span></div>
       </section>
@@ -390,7 +406,6 @@ body.render .nav,body.render .sharebar,body.render .modepill{display:none!import
   <button type="button" class="ghostbtn" id="again">Done</button>
 </section>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const cv=$('cv'),W=1080,H=1920,HANDLE='@flatto.bali';
@@ -455,7 +470,9 @@ function readSummary(txt){
 }
 $('shot').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
-  if(!window.Tesseract){$('srcinfo').textContent="Couldn't load the reader. Tap the numbers above to type them.";return}
+  $('srcinfo').textContent='Reading your screenshot…';$('runSection').classList.add('reading');
+  // The reader (~5 MB with its language data) only loads for people who use it, so the page opens instantly.
+  if(!window.Tesseract){try{await new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)})}catch(err){$('runSection').classList.remove('reading');$('srcinfo').textContent="Couldn't load the reader. Type your km and time instead.";return}}
   $('srcinfo').textContent='Reading your screenshot…';$('runSection').classList.add('reading');$('sources').firstChild.textContent='Reading…';
   try{
     const {data:{text}}=await Tesseract.recognize(f,'eng');
@@ -685,7 +702,9 @@ function arcText(str,r,top,font,c){
 }
 function coverRect(img,x,y,w,h){if(!mw(img))return;const r=Math.max(w/mw(img),h/mh(img)),iw=mw(img)*r,ih=mh(img)*r;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}
 const myBit=d=>profile?`${((profile.total||0)+d.km).toFixed(1)} KM WITH FLATTO`:null;
-function storyBits(d){const b=[];if(myBit(d))b.push(myBit(d));if(d.tier)b.push(d.tier);return b}
+// Everyone's first story at Flatto says so.
+const firstRun=()=>val('mode')==='run'&&!(profile&&profile.runs>0)&&store.get('flattoRuns',0)===0;
+function storyBits(d){const b=[];if(firstRun())b.push('FIRST RUN AT FLATTO');if(myBit(d))b.push(myBit(d));if(d.tier)b.push(d.tier);return b}
 
 function drawReceipt(c,rows,total,note){
   // Drawn at full size, then shrunk and tilted into the lower part of the story so the photo stays visible.
@@ -762,7 +781,7 @@ function draw(only){
     [['KM',d.dist],['PACE',d.pace],['TIME',d.time]].forEach(([l,v],i)=>{const cx=x+w*(i*2+1)/6;text(l,cx,y+640,'600 30px Inter',c,'center',5);text(v,cx,y+720,'800 68px Inter',c)});
     scriptLogo(W/2,y+h-50,110,c);footer(y+h+80,c,d);
   }else if(st==='receipt'){
-    drawReceipt(c,[['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]],'1 POST-RUN COFFEE',myBit(d)||d.tier||'THANK YOU, RUNNER');
+    drawReceipt(c,[['RUN',`#${d.num}`],['DISTANCE',`${d.dist} KM`],['TIME',d.time],['PACE',`${d.pace} /KM`]],'1 POST-RUN COFFEE',firstRun()?'FIRST RUN AT FLATTO':myBit(d)||d.tier||'THANK YOU, RUNNER');
   }else if(st==='stamp'){
     scriptLogo(W/2,360,160,c);text(HANDLE,W/2,455,'800 34px Inter',c,'center',3);
     drawStamp(c,'FLATTO RUN CLUB',`SESEH · BALI · ${now.getFullYear()}`,d.dist,'KILOMETRES');
@@ -865,6 +884,8 @@ function renderThumbs(){
 function shareLabel(){
   if(!$('share'))return;const d0=data(),run=val('mode')==='run';
   $('runSection').classList.toggle('is-done',d0.km>0);$('photoBtn').classList.toggle('is-done',$('photoBtn').classList.contains('has'));
+  const photoIn=$('photoBtn').classList.contains('has'),nextStep=run&&!$('hideNums').checked&&!(d0.km>0)?'runSection':!photoIn?'photoBtn':null;
+  ['runSection','photoBtn'].forEach(id=>$(id).classList.toggle('next',id===nextStep));
   $('shareStep').classList.toggle('is-done',/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('quickEmail').value.trim()));
   const wasWait=$('share').classList.contains('wait'),nowWait=run&&!$('hideNums').checked&&!(d0.km>0)&&!bgVideo;
   $('share').classList.toggle('wait',nowWait);if(wasWait&&!nowWait){$('share').classList.remove('ready');void $('share').offsetWidth;$('share').classList.add('ready')}
@@ -928,7 +949,7 @@ async function renderVideo(){
   $('share').textContent='▶ Share video to Instagram';say('Video ready. Tap Share to post it.');
 }
 $('share').addEventListener('click',()=>{
-  const d=data(),coffee=val('mode')==='coffee';
+  const d=data(),coffee=val('mode')==='coffee';doneFirst=firstRun();
   if(!coffee&&!$('hideNums').checked&&!(d.km>0)){say('Add your km and time first.');$('runSection').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>$('dist').focus(),350);return}
   if(bgVideo){
     if(rendering)return;
@@ -963,10 +984,11 @@ function claimFromEmail(){
   setProfile({first:raw[0].toUpperCase()+raw.slice(1),last:'',email,insta:'',optin:true,total:0,runs:store.get('flattoRuns',0)});
 }
 let doneKm=0;
+let doneFirst=false;
 function showDone(d,coffee){
   doneKm=coffee?0:d.km;store.set('flattoSeen',true);
-  $('done').querySelector('h2').textContent=coffee?'Posted. Enjoy your coffee.':'Posted. Nice run.';
-  setTimeout(()=>{$('scrim').hidden=false;$('done').hidden=false;fillDone()},600);
+  $('done').querySelector('h2').textContent=coffee?'Posted. Enjoy your coffee.':doneFirst?'Welcome to the Flatto crew.':'Posted. Nice run.';
+  setTimeout(()=>{$('scrim').hidden=false;$('done').hidden=false;fillDone();confetti()},600);
 }
 function fillDone(){
   if($('done').hidden)return;
@@ -975,11 +997,23 @@ function fillDone(){
   $('doneRank').textContent=!profile?'Add your email next time to climb the Flatto board.':profile.weekRank?(profile.weekRank===1?"You're #1 this week. Hold it.":`You're #${profile.weekRank} this week · ${profile.weekGap.toFixed(1)} km behind ${profile.weekAhead}`):'';
   $('doneStreak').textContent=profile&&profile.streak?`🔥 ${profile.streak}-week streak · see you next week`:'';
 }
+// A short burst of Flatto-coloured confetti over the done sheet.
+function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const c=document.createElement('canvas');c.className='confetti';c.width=innerWidth*2;c.height=innerHeight*2;document.body.appendChild(c);
+  const g=c.getContext('2d'),cols=['#4C2F31','#CFE3F3','#F4EEDC','#B8862B','#2F7D4F'],P=[...Array(90)].map(()=>({x:c.width/2+(Math.random()-.5)*c.width*.3,y:c.height*.55,vx:(Math.random()-.5)*26,vy:-Math.random()*34-14,s:8+Math.random()*12,r:Math.random()*6,c:cols[Math.random()*cols.length|0]}));
+  const t0=performance.now();(function f(t){const k=(t-t0)/1400;g.clearRect(0,0,c.width,c.height);
+    P.forEach(p=>{p.vy+=1.1;p.x+=p.vx;p.y+=p.vy;p.r+=.15;g.save();g.translate(p.x,p.y);g.rotate(p.r);g.globalAlpha=Math.max(0,1-k);g.fillStyle=p.c;g.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);g.restore()});
+    if(k<1)requestAnimationFrame(f);else c.remove()})(t0);
+}
 const closeDone=()=>{$('done').hidden=true;$('scrim').hidden=true};$('again').addEventListener('click',closeDone);$('scrim').addEventListener('click',closeDone);
 // Post / Board tabs; the share bar belongs to Post.
 function showTab(board){$('viewPost').hidden=board;$('viewBoard').hidden=!board;$('shareBar').hidden=board;$('tabPost').classList.toggle('on',!board);$('tabBoard').classList.toggle('on',board);$('tabPost').setAttribute('aria-selected',!board);$('tabBoard').setAttribute('aria-selected',board);if(board)showBoard();window.scrollTo({top:0})}
 $('tabPost').addEventListener('click',()=>showTab(false));$('boardJoin').addEventListener('click',()=>{showTab(false);setTimeout(()=>{$('runSection').scrollIntoView({behavior:'smooth',block:'center'})},50)});$('tabBoard').addEventListener('click',()=>showTab(true));
 $('welcomeX').addEventListener('click',()=>{store.set('flattoSeen',true);$('welcome').hidden=true});
+document.querySelectorAll('#quickKm button').forEach(b=>b.addEventListener('click',()=>{const el=$('dist');el.value=Number(b.dataset.km).toFixed(2);el.dispatchEvent(new Event('input'));$('time').focus()}));
+$('dist').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('time').focus()}});
+$('time').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('time').blur()}});
 $('fullBoard').addEventListener('click',()=>{boardFull=!boardFull;showBoard()});
 $('photo').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
