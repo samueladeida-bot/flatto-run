@@ -264,6 +264,9 @@ input,select,textarea{font-size:16px!important}
 /* the share bar steps aside while the keyboard is up */
 body.typing .sharebar{display:none}
 
+.gobtn{width:100%;margin-top:16px;border:0;border-radius:16px;background:var(--plum);color:#F4EEDC;font-weight:800;font-size:16px;padding:16px;box-shadow:0 10px 24px rgba(76,47,49,.3)}
+.gobtn:active{transform:scale(.98)}
+
 /* marketing renders: story only */
 body.render{padding:0;background:#000}
 body.render .wrap{max-width:none;gap:0}
@@ -392,24 +395,33 @@ body.render .nav,body.render .sharebar,body.render .modepill{display:none!import
     <button id="share" type="button">Share to Instagram</button>
     <p class="tagchip" id="tagChip" hidden>✓ @flatto.bali copied · Aa → Paste in your story <button type="button" id="copyAgain">Copy again</button></p>
     <p class="status" id="status" role="status"></p>
-    <img class="out" id="out" alt="Your finished story" hidden>
   </div>
 </div>
 
 <div class="scrim" id="scrim" hidden></div>
-<section class="done" id="done" hidden role="dialog" aria-label="Posted">
+<section class="done" id="done" hidden role="dialog" aria-label="Share your story">
   <div class="grab"></div>
-  <h2>Posted. Nice run.</h2>
-  <ol class="igguide" aria-label="In Instagram">
-    <li><i class="ig1"></i><b>Instagram → Story</b><span>In the share menu</span></li>
-    <li><i class="ig2">Aa</i><b>Tap Aa, then Paste</b><span>@flatto.bali is copied</span></li>
-    <li><i class="ig3">↑</i><b>Post your story</b><span>We repost the best runs</span></li>
-  </ol>
-  <p class="plus" id="donePlus"></p>
-  <p class="hint" id="doneRank" style="text-align:center"></p>
-  <p class="hint" id="doneStreak" style="text-align:center"></p>
-  <p class="status" id="note" role="status"></p>
-  <button type="button" class="ghostbtn" id="again">Done</button>
+  <div id="doneGuide">
+    <h2 id="guideTitle">Almost there.</h2>
+    <p class="hint" style="margin:-4px 0 12px">Instagram opens next. Then 3 taps:</p>
+    <ol class="igguide" aria-label="In Instagram">
+      <li><i class="ig1"></i><b>Instagram → Story</b><span>In the share menu</span></li>
+      <li><i class="ig2">Aa</i><b>Tap Aa, then Paste</b><span>@flatto.bali is copied</span></li>
+      <li><i class="ig3">↑</i><b>Post your story</b><span>We repost the best runs</span></li>
+    </ol>
+    <button type="button" class="gobtn" id="goShare">Open Instagram share</button>
+  </div>
+  <div id="doneResult" hidden>
+    <h2 id="resultTitle">Posted. Nice run.</h2>
+    <div class="tagbox"><b>✓ @flatto.bali copied</b><span>In your story: Aa → Paste to tag Flatto</span></div>
+    <p class="plus" id="donePlus"></p>
+    <p class="hint" id="doneRank" style="text-align:center"></p>
+    <p class="hint" id="doneStreak" style="text-align:center"></p>
+    <p class="status" id="note" role="status"></p>
+    <p class="hint" id="saveHint" style="text-align:center" hidden></p>
+    <img class="out" id="out" alt="Your finished story" hidden>
+    <button type="button" class="ghostbtn" id="again">Done</button>
+  </div>
 </section>
 
 <script>
@@ -954,34 +966,46 @@ async function renderVideo(){
   bgVideo.loop=true;bgVideo.play().catch(()=>{});rendering=false;
   $('share').textContent='▶ Share video to Instagram';say('Video ready. Tap Share to post it.');
 }
-$('share').addEventListener('click',()=>{
+// Share: the Instagram guide shows BEFORE the share sheet (first time only), because once iOS hands
+// off to Instagram the page is out of sight. The share sheet then opens from the guide's own button.
+let pending=null;
+function prepareShare(){
   const d=data(),coffee=val('mode')==='coffee';doneFirst=firstRun();
-  if(!coffee&&!$('hideNums').checked&&!(d.km>0)){say('Add your km and time first.');$('runSection').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>$('dist').focus(),350);return}
+  if(!coffee&&!$('hideNums').checked&&!(d.km>0)){say('Add your km and time first.');$('runSection').scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>$('dist').focus(),350);return null}
   if(bgVideo){
-    if(rendering)return;
-    if(!readyVideo||videoKey!==stateKey()){renderVideo();return}
-    claimFromEmail();const counted=coffee||recordPost(d);showDone(d,coffee);
-    say(counted?'Show your story at the counter.':'Add your email in step 3 so your km count.');
-    if(navigator.canShare&&navigator.canShare({files:[readyVideo]}))navigator.share({files:[readyVideo]}).catch(e=>{if(e.name!=='AbortError')say("Sharing didn't open. Try again.")});
-    else say("This browser can't share videos. Try Safari on iPhone.");
-    return;
+    if(rendering)return null;
+    if(!readyVideo||videoKey!==stateKey()){renderVideo();return null}
+    return {file:readyVideo,blob:null,d,coffee};
   }
-  if(!readyBlob){say('One second, your story is getting ready. Tap Share again.');draw();return}
-  // Keep the prepared image: signing up below redraws the page, which clears readyBlob.
+  if(!readyBlob){say('One second, your story is getting ready. Tap Share again.');draw();return null}
+  // Keep the prepared image: signing up redraws the page, which clears readyBlob.
   const blob=readyBlob;
+  return {file:new File([blob],coffee?'flatto-coffee.jpg':'flatto-run.jpg',{type:'image/jpeg'}),blob,d,coffee};
+}
+function openSheet(guide){$('doneGuide').hidden=!guide;$('doneResult').hidden=guide;$('scrim').hidden=false;$('done').hidden=false}
+function doShare(p){
   claimFromEmail();
-  const file=new File([blob],coffee?'flatto-coffee.jpg':'flatto-run.jpg',{type:'image/jpeg'});
   // Count at the tap: once iOS hands off to Instagram, Safari may never hear back from the share sheet.
-  const counted=coffee||recordPost(d);
-  say(counted?'Show your story at the counter.':'Add your email in step 3 so your km count.');
-  showDone(d,coffee);
-  if(navigator.canShare&&navigator.canShare({files:[file]})){
-    navigator.share({files:[file]}).catch(e=>{if(e.name!=='AbortError')say("Sharing didn't open. Press and hold the story below to save it.")});
-  }else{
-    const out=$('out');out.src=URL.createObjectURL(blob);out.hidden=false;
-    say('Press and hold the story below, then Save to Photos and post it from Instagram.');
-  }
+  const counted=p.coffee||recordPost(p.d);
+  store.set('flattoGuideSeen',true);
+  doneKm=p.coffee?0:p.d.km;store.set('flattoSeen',true);
+  $('resultTitle').textContent=p.coffee?'Posted. Enjoy your coffee.':doneFirst?'Welcome to the Flatto crew.':'Posted. Nice run.';
+  $('out').hidden=true;$('saveHint').hidden=true;openSheet(false);fillDone();
+  say(counted?'':'Add your email in step 3 so your km count.');
+  if(navigator.canShare&&navigator.canShare({files:[p.file]})){
+    navigator.share({files:[p.file]}).catch(e=>{if(e.name!=='AbortError')$('note').textContent="Sharing didn't open. Tap Share again."});
+  }else if(p.blob){
+    const out=$('out');out.src=URL.createObjectURL(p.blob);out.hidden=false;
+    $('saveHint').textContent='Press and hold your story, then Save to Photos and post it from Instagram.';$('saveHint').hidden=false;
+  }else{$('saveHint').textContent="This browser can't share videos. Try Safari on iPhone.";$('saveHint').hidden=false}
+}
+$('share').addEventListener('click',()=>{
+  const p=prepareShare();if(!p)return;
+  if(store.get('flattoGuideSeen',false)){if(doneFirst)confetti();doShare(p);return}
+  pending=p;$('guideTitle').textContent=p.coffee?'Almost there.':doneFirst?'Welcome to the Flatto crew.':'Almost there.';
+  openSheet(true);if(doneFirst)confetti();
 });
+$('goShare').addEventListener('click',()=>{if(pending){const p=pending;pending=null;doShare(p)}});
 // Step 3 email: a first-timer joins the board just by typing it; the name comes from the email and can be edited later.
 function claimFromEmail(){
   if(profile)return;const email=$('quickEmail').value.trim().toLowerCase();
@@ -991,11 +1015,6 @@ function claimFromEmail(){
 }
 let doneKm=0;
 let doneFirst=false;
-function showDone(d,coffee){
-  doneKm=coffee?0:d.km;store.set('flattoSeen',true);
-  $('done').querySelector('h2').textContent=coffee?'Posted. Enjoy your coffee.':doneFirst?'Welcome to the Flatto crew.':'Posted. Nice run.';
-  setTimeout(()=>{$('scrim').hidden=false;$('done').hidden=false;fillDone();confetti()},600);
-}
 function fillDone(){
   if($('done').hidden)return;
   $('donePlus').textContent=doneKm?`+${doneKm.toFixed(1)} KM`:'☕';
@@ -1012,7 +1031,7 @@ function confetti(){
     P.forEach(p=>{p.vy+=1.1;p.x+=p.vx;p.y+=p.vy;p.r+=.15;g.save();g.translate(p.x,p.y);g.rotate(p.r);g.globalAlpha=Math.max(0,1-k);g.fillStyle=p.c;g.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);g.restore()});
     if(k<1)requestAnimationFrame(f);else c.remove()})(t0);
 }
-const closeDone=()=>{$('done').hidden=true;$('scrim').hidden=true};$('again').addEventListener('click',closeDone);$('scrim').addEventListener('click',closeDone);
+const closeDone=()=>{$('done').hidden=true;$('scrim').hidden=true;pending=null};$('again').addEventListener('click',closeDone);$('scrim').addEventListener('click',closeDone);
 // Post / Board tabs; the share bar belongs to Post.
 function showTab(board){$('viewPost').hidden=board;$('viewBoard').hidden=!board;$('shareBar').hidden=board;$('tabPost').classList.toggle('on',!board);$('tabBoard').classList.toggle('on',board);$('tabPost').setAttribute('aria-selected',!board);$('tabBoard').setAttribute('aria-selected',board);if(board)showBoard();window.scrollTo({top:0})}
 $('tabPost').addEventListener('click',()=>showTab(false));$('boardJoin').addEventListener('click',()=>{showTab(false);setTimeout(()=>{$('runSection').scrollIntoView({behavior:'smooth',block:'center'})},50)});$('tabBoard').addEventListener('click',()=>showTab(true));
