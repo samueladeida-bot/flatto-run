@@ -110,6 +110,8 @@ body.render .stage{max-width:none}
 body.render canvas{width:540px;height:960px;max-width:none;border-radius:0}
 body.render .nav{display:none}
 .logo-img{display:block;height:64px;margin:0 auto}
+.tagchip{font-size:13px;text-align:center;color:#8FD19E;margin:0;line-height:1.5}
+.tagchip button{all:unset;cursor:pointer;text-decoration:underline;color:var(--muted);margin-left:4px}
 .out[hidden]{display:none}
 .out{display:block;max-width:220px;margin:12px auto 0;border-radius:12px}
 a{color:var(--sky)}
@@ -169,11 +171,11 @@ a{color:var(--sky)}
 
   <div class="cta">
     <label class="pick main" for="photo" id="photoBtn">Add your photo or video<input id="photo" type="file" accept="image/*,video/*" hidden></label>
-    <button id="copyTag" type="button" class="second">1 · Copy @flatto.bali</button>
-    <button id="share" type="button" class="second">2 · Share to Instagram</button>
+    <button id="share" type="button" class="second">Share to Instagram</button>
+    <p class="tagchip" id="tagChip" hidden>✓ @flatto.bali is copied. In your story: <b>Aa → Paste</b>. <button type="button" id="copyAgain">Copy again</button></p>
     <p class="status" id="status" role="status"></p>
     <p class="status" id="note" role="status"></p>
-    <p class="hint" style="text-align:center">Share menu: swipe the app row to <b>Instagram → Story</b>. In your story, tap <b>Aa → Paste</b> to tag @flatto.bali. Not there? <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>.</p>
+    <p class="hint" style="text-align:center">Share menu: swipe the app row to <b>Instagram → Story</b>. Tag @flatto.bali: we repost the best runs. Not there? <b>Save Image</b>, then <a href="instagram://story-camera" style="font-weight:800">open Instagram</a>.</p>
     <img class="out" id="out" alt="Your finished story" hidden>
   </div>
 
@@ -623,11 +625,16 @@ let sx=null;cv.addEventListener('pointerdown',e=>{sx=e.clientX});cv.addEventList
 // The story PNG is prepared after every redraw, so the tap on Share opens the share sheet right away (Safari needs that).
 let readyBlob=null,blobTimer=null,bgVideo=null,readyVideo=null,videoKey='',rendering=false;
 function queueBlob(){readyBlob=null;clearTimeout(blobTimer);blobTimer=setTimeout(()=>cv.toBlob(b=>{readyBlob=b},'image/png'),120)}
-// Instagram can't be told to tag an account, so the handle is copied on its own tap; Aa > Paste in the story makes it a mention.
-$('copyTag').addEventListener('click',async()=>{
-  try{await navigator.clipboard.writeText(HANDLE);$('copyTag').textContent='✓ @flatto.bali copied';$('copyTag').classList.add('copied')}
-  catch(e){say('Copying is blocked here. In your story, type @flatto.bali in Aa.')}
-});
+// Instagram can't be told to tag an account, so @flatto.bali goes to the clipboard and Aa > Paste in the story makes it a mention.
+// Safari only allows copying during a tap and not on the Share tap itself, so it rides along with the taps before it
+// (the first tap anywhere, and again on "Add your photo or video").
+let tagCopied=false;
+async function copyTag(){
+  try{await navigator.clipboard.writeText(HANDLE);tagCopied=true;$('tagChip').hidden=false}catch(e){}
+}
+document.addEventListener('click',e=>{if(!tagCopied&&!e.target.closest('#share'))copyTag()},true);
+$('photoBtn').addEventListener('click',()=>copyTag());
+$('copyAgain').addEventListener('click',e=>{e.stopPropagation();copyTag().then(()=>{if(!tagCopied)say('Copying is blocked here. In your story, type @flatto.bali in Aa.')})});
 // Video stories are recorded from the live canvas (max 15 s, muted), then shared on a second tap: Safari only opens the share sheet straight from a tap.
 const stateKey=()=>JSON.stringify([data(),STYLES[styleIdx],val('color'),$('mascot').checked,val('drink'),val('mode')]);
 async function renderVideo(){
@@ -673,10 +680,10 @@ $('share').addEventListener('click',()=>{
 $('photo').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
   const ready=label=>{$('photoBtn').firstChild.textContent=label;document.querySelector('.cta').classList.add('ready')};
-  if(bgVideo){bgVideo.pause();bgVideo=null}readyVideo=null;$('share').textContent='2 · Share to Instagram';
+  if(bgVideo){bgVideo.pause();bgVideo=null}readyVideo=null;$('share').textContent='Share to Instagram';
   if(f.type.startsWith('video/')){
     const v=document.createElement('video');v.muted=true;v.playsInline=true;v.loop=true;v.preload='auto';v.src=URL.createObjectURL(f);
-    v.addEventListener('loadeddata',()=>{bgVideo=v;ready('Change photo or video');$('share').textContent='2 · Make my video';v.play().catch(()=>{});(function loop(){if(bgVideo!==v)return;draw();requestAnimationFrame(loop)})()},{once:true});
+    v.addEventListener('loadeddata',()=>{bgVideo=v;ready('Change photo or video');$('share').textContent='Make my video';v.play().catch(()=>{});(function loop(){if(bgVideo!==v)return;draw();requestAnimationFrame(loop)})()},{once:true});
     v.load();return;
   }
   const img=new Image();img.onload=()=>{photo=img;ready('Change photo or video');draw()};img.src=URL.createObjectURL(f);
