@@ -294,7 +294,7 @@ h1,h2,h3{text-wrap:balance}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const slides=[...document.querySelectorAll('.slide')],bars=document.getElementById('bars');
-const APP='https://samueladeida-bot.github.io/flatto-run/';
+const APP='https://flatto.netlify.app/';
 bars.innerHTML=slides.map(()=>'<i><b></b></i>').join('');
 const stories=['big','receipt','stamp','tee','mascot','polaroid','c-polaroid'];
 const t=document.getElementById('trackA');t.innerHTML=[...stories,...stories].map(s=>`<img src="img/${s}.jpg" alt="">`).join('');
