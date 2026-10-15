@@ -288,6 +288,14 @@ canvas{max-width:none}
   .done{max-width:560px;margin:0 auto;border-radius:24px 24px 0 0}
 }
 
+.layout{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;gap:2px}
+.seg label{position:relative;cursor:pointer}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.seg span{display:flex;align-items:center;justify-content:center;min-height:38px;min-width:42px;padding:0 12px;border-radius:9px;font-size:13px;font-weight:700;color:var(--muted);transition:all .15s}
+.seg input:checked+span{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(43,26,28,.12)}
+.seg input:focus-visible+span{outline:2px solid var(--plum)}
+
 /* marketing renders: story only */
 body.render{padding:0;background:#000}
 body.render .wrap{max-width:none;gap:0}
@@ -334,6 +342,18 @@ body.render .nav,body.render .sharebar,body.render .modepill{display:none!import
       <span class="sep"></span>
       <label class="tog"><input type="checkbox" id="mascot" checked><span>Mascot</span></label>
       <label class="tog" id="hideWrap"><input type="checkbox" id="hideNums"><span>Hide numbers</span></label>
+    </div>
+    <div class="layout" id="layoutRow">
+      <div class="seg" role="radiogroup" aria-label="Position">
+        <label><input type="radio" name="pos" value="top"><span>Top</span></label>
+        <label><input type="radio" name="pos" value="middle"><span>Middle</span></label>
+        <label><input type="radio" name="pos" value="bottom" checked><span>Bottom</span></label>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Size">
+        <label><input type="radio" name="size" value="s"><span>S</span></label>
+        <label><input type="radio" name="size" value="m" checked><span>M</span></label>
+        <label><input type="radio" name="size" value="l"><span>L</span></label>
+      </div>
     </div>
 
     <div id="steps" style="display:flex;flex-direction:column;gap:10px">
@@ -747,7 +767,8 @@ function storyBits(d){const b=[];if(firstRun())b.push('FIRST RUN AT FLATTO');if(
 
 function drawReceipt(c,rows,total,note){
   // Drawn at full size, then shrunk and tilted into the lower part of the story so the photo stays visible.
-  ctx.save();ctx.translate(W/2+40,1390);ctx.rotate(-.05);ctx.scale(.6,.6);ctx.translate(-W/2,-950);
+  const rk=({s:.45,m:.6,l:.75}[val('size')]||.6),rp=val('pos')||'bottom',ry=rp==='top'?560:rp==='middle'?960:1390;
+  ctx.save();ctx.translate(W/2+40,ry);ctx.rotate(-.05);ctx.scale(rk,rk);ctx.translate(-W/2,-950);
   try{return drawReceiptBody(c,rows,total,note)}finally{ctx.restore()}
 }
 function drawReceiptBody(c,rows,total,note){
@@ -794,7 +815,11 @@ function draw(only){
     text('Add your km and time below',W/2,H/2+330,'600 46px Inter','rgba(255,255,255,.85)');
     if(!bgVideo)queueBlob();shareLabel();return;
   }
-  const OVERLAY=st.includes('receipt')?1:.85;ctx.save();ctx.translate(W/2,H/2);ctx.scale(OVERLAY,OVERLAY);ctx.translate(-W/2,-H/2);
+  // Placement: overlays sit in a band (bottom by default) so the middle of the photo stays free.
+  // Receipts place themselves (drawReceipt); polaroids are full compositions and stay as they are.
+  const K={s:.5,m:.64,l:.85}[val('size')]||.64,pos=val('pos')||'bottom',fixed=st.includes('receipt')||st.endsWith('polaroid');
+  const cy=pos==='top'?H*K/2+60:pos==='bottom'?H-H*K/2-70:H/2,OVERLAY=fixed?1:K;
+  ctx.save();if(st==='mini'){ctx.translate(0,pos==='top'?-1420:pos==='middle'?-740:0)}else if(!fixed){ctx.translate(W/2,cy);ctx.scale(K,K);ctx.translate(-W/2,-H/2)} // Minimal is already a bottom line: it only moves
   if(st==='classic'){
     drawMascot(W/2,120,520);
     let y=560;
@@ -980,6 +1005,7 @@ const MODES={run:['big','receipt','stamp','medal','mag','postcard','tee','mascot
 let STYLES=MODES.run,styleIdx=0;
 document.querySelectorAll('input[name=mode]').forEach(i=>i.addEventListener('change',()=>{const m=val('mode');STYLES=MODES[m==='run'&&$('hideNums').checked?'secret':m];$('runSection').hidden=m!=='run';$('hideWrap').hidden=m!=='run';$('shareStep').hidden=m!=='run'||!!profile;$('orderSection').hidden=m!=='coffee';setStyle(0)}));
 document.querySelectorAll('input[name=drink]').forEach(i=>i.addEventListener('change',draw));
+document.querySelectorAll('input[name=pos],input[name=size]').forEach(i=>i.addEventListener('change',draw));
 $('hideNums').addEventListener('change',()=>{STYLES=MODES[$('hideNums').checked?'secret':'run'];setStyle(0)});
 const STYLE_NAMES={medal:'Medal',postcard:'Postcard',mag:'Magazine',mini:'Minimal','c-mag':'Magazine',big:'Big number',receipt:'Receipt',stamp:'Stamp',tee:'Club tee',mascot:'Lost in Seseh',polaroid:'Polaroid',classic:'Classic',bib:'Race bib','s-big':'Run done','s-receipt':'Secret receipt','s-stamp':'Stamp','s-mascot':'Coffee now','s-polaroid':'Polaroid','c-receipt':'Receipt','c-stamp':'Stamp','c-logo':'Logo','c-tee':'Club tee','c-mascot':"O'clock",'c-polaroid':'Polaroid'};
 function setStyle(i){
@@ -1122,6 +1148,8 @@ if(RQ.get('render')){
   const m=Object.keys(MODES).find(k=>MODES[k].includes(st))||'run';
   STYLES=MODES[m];styleIdx=Math.max(0,STYLES.indexOf(st));
   const col={sky:'#CFE3F3',plum:'#4C2F31'}[RQ.get('color')];if(col)document.querySelector(`input[name=color][value="${col}"]`).checked=true;
+  if(RQ.get('pos'))document.querySelector(`input[name=pos][value="${RQ.get('pos')}"]`).checked=true;
+  if(RQ.get('size'))document.querySelector(`input[name=size][value="${RQ.get('size')}"]`).checked=true;
   if(RQ.get('drink'))document.querySelector(`input[name=drink][value="${RQ.get('drink')}"]`).checked=true;
   $('num').value=RQ.get('num')||'7';if(!$('dist').value)$('dist').value='8.42';if(!$('time').value)$('time').value='43:41';
   if(RQ.get('bg')){const im=new Image();im.onload=()=>{photo=im;draw()};im.src=RQ.get('bg')}
